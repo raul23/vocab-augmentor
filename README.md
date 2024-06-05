@@ -34,8 +34,9 @@
    ```
 3. Install the required dependencies:
    ```terminal
-   pip install -r requirements.txt
+   pip install jieba langcodes language_data pandas pypinyin sacremoses spacy transformers
    ```
+   <!--- TODO: pip install -r requirements.txt --->
 
 ## Usage
 
