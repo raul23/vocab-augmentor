@@ -40,7 +40,7 @@
 
 ## Usage
 
-### Run the script
+### Run the script `vocab.py`
 
 1. Prepare your vocabulary list and input text.
 2. Run the script:
