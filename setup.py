@@ -6,13 +6,16 @@ import sys
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as build_py_orig
 
-from st_tts import __version__
+from vocab_augmentor import __version__
 
-if sys.version_info < (3, 7):
-    raise RuntimeError("""
-    st_tts v0.1.0+ supports Python 3.7 and above. 
-    """)
+major = 3
+minor = 10
+patch = 13
 
+if sys.version_info < (major, minor, patch):
+    raise RuntimeError(f"vocab_augmentor v0.1.0+ supports Python {major}.{minor}.{patch} and above.")
+
+VERSION = __version__
 excluded = []
     
 
@@ -32,14 +35,6 @@ class build_py(build_py_orig):
         ]
 
 
-# Choose the correct version based on script's arg
-if len(sys.argv) > 1 and sys.argv[1] == "testing":
-    VERSION = __test_version__
-    # Remove "testing" from args so setup doesn't process "testing" as a cmd
-    sys.argv.remove("testing")
-else:
-    VERSION = __version__
-
 # Directory of this file
 dirpath = os.path.abspath(os.path.dirname(__file__))
 
@@ -48,15 +43,13 @@ with open(os.path.join(dirpath, "README.md"), encoding="utf-8") as f:
     README = f.read()
 
 # The text of the requirements.txt file
-# TODO: empty for now
-"""
 with open(os.path.join(dirpath, "requirements.txt")) as f:
     REQUIREMENTS = f.read().splitlines()
-"""
 
-setup(name='simple-transformer-tts',
+setup(name='vocab-augmentor',
       version=VERSION,
-      description='''Simple Transformer Text-to-Speech.''',
+      description='''Translates and expands your vocabulary list by identifying and 
+      translating new words from provided text using various language models.''',
       long_description=README,
       long_description_content_type='text/markdown',
       classifiers=[
@@ -66,7 +59,7 @@ setup(name='simple-transformer-tts',
         'Programming Language :: Python :: 3',
       ],
       keywords='text-to-speech deep-learning audio text pytorch',
-      url='https://github.com/raul23/simple-transformer-tts',
+      url='https://github.com/raul23/Vocab-Augmentor',
       author='Raul C.',
       author_email='rchfe23@gmail.com',
       license='MIT',
@@ -75,10 +68,12 @@ setup(name='simple-transformer-tts',
       cmdclass={'build_py': build_py},
       include_package_data=True,
       exclude_package_data={'': ['docs/*']},
-      install_requires=[],
-      entry_points={},
+      install_requires=REQUIREMENTS,
+      entry_points={
+        'console_scripts': ['vocab=vocab_augmentor.scripts.vocab:main']
+      },
       project_urls={  # Optional
-          'Bug Reports': 'https://github.com/raul23/simple-transformer-tts/issues',
-          'Source': 'https://github.com/raul23/simple-transformer-tts',
+          'Bug Reports': 'https://github.com/raul23/Vocab-Augmentor/issues',
+          'Source': 'https://github.com/raul23/Vocab-Augmentor',
       },
       zip_safe=False)
