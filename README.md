@@ -45,7 +45,7 @@
 1. Prepare your vocabulary list and input text.
 2. Run the script:
    ```terminal
-   python vocab.py --vocab_list your_vocab_list.csv --input_text your_text.txt --model_name chosen_model
+   vocab.py --vocab_list your_vocab_list.csv --input_text your_text.txt --model_name chosen_model
    ```
 3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
 
