@@ -1,7 +1,7 @@
 # Vocab-Augmentor [work-in-progress]
 ## Overview
 
-**vocab_augmentor.py** is a Python script designed to help language learners expand their vocabulary effortlessly. By leveraging advanced language models such as `facebook/mbart-large-50-many-to-many-mmt`, `Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any given text, translates them, and updates your personal vocabulary list. Additionally, it supports adding pronunciation sounds for new words using the MeloTTS text-to-speech library for supported languages.
+**vocab.py** is a Python script designed to help language learners expand their vocabulary effortlessly. By leveraging advanced language models such as `facebook/mbart-large-50-many-to-many-mmt`, `Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any given text, translates them, and updates your personal vocabulary list. Additionally, it supports adding pronunciation sounds for new words using the MeloTTS text-to-speech library for supported languages.
 
 ## Features
 
@@ -45,7 +45,7 @@
 1. Prepare your vocabulary list and input text.
 2. Run the script:
    ```terminal
-   python vocab_augmentor.py --vocab_list your_vocab_list.csv --input_text your_text.txt --model_name chosen_model
+   python vocab.py --vocab_list your_vocab_list.csv --input_text your_text.txt --model_name chosen_model
    ```
 3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
 
