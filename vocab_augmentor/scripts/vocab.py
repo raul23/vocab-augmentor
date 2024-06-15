@@ -1,8 +1,10 @@
 import argparse
 import csv
 import importlib
+import inspect
 import logging
 import os
+import re
 import shutil
 import string
 import subprocess
@@ -18,39 +20,43 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 # Suppress all UserWarnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-import langcodes
-# langid detects `text = "今天我很高兴"`as zh (chinese)
-# fails to detet `text = "Estou feliz"` as pt, detects it as cy
-import langid
-# TODO: remove
-import ipdb
+UDIO_MAIN_DIRPATH = "~/audio/"
+GEN_MODEL = 'gemini'
+LANG_DETECTOR = 'polyglot'
+TRANSL_MODEL = 'helsinki'
 
-# langdetect fails with `text = "今天我很高兴"`, it detects it as ko (korean)
-# detects `text = "Estou feliz"` as pt
-from langdetect import detect, DetectorFactory
-from langdetect.lang_detect_exception import LangDetectException
+LANG_DETECTORS = ['langdetect', 'langid', 'polyglot']
 
-# For langdetect
-DetectorFactory.seed = 0
+# Mapping of short model names to full model names
+GEN_MODEL_MAP = {
+    'gemini': 'gemini-pro',
+    'llama': 'meta-llama/Meta-Llama-3-8B-Instruct'
+}
 
-# polyglot detects `text = "今天我很高兴"` as chinese and `text = "Estou feliz"` as pt
-from polyglot.detect import Detector
-from polyglot.detect.base import logger
-
-# Suppress polyglot logging
-logger.setLevel(logging.ERROR)
-
-Gen_Model = 'gemini'
-Lang_Detector = 'polyglot'
-Transl_Model = 'helsinki'
-
-# Mapping of short names to full model names
-MODEL_MAP = {
+TRANSL_MODEL_MAP = {
     'helsinki': 'Helsinki-NLP/opus-mt',
     'mbart': 'facebook/mbart-large-50-many-to-many-mmt',
     'gemini': 'gemini-pro',
     'llama': 'meta-llama/Meta-Llama-3-8B-Instruct'
 }
+
+COLUMN_TO_MIN_WIDTH = {
+    'Word': 'min-width: 120px;', 
+    'Pinyin (Word)': 'min-width: 120px;', 
+    'Audio (Word)': 'min-width: 120px;',  
+    'Translation': 'min-width: 120px;',
+    'POS': 'min-width: 60px;', 
+    'Word Origin': 'min-width: 120px;',
+    'Example Sentences': 'min-width: 400px;',
+    'Translation Model': 'min-width: 130px;', 
+    'TTS Model': 'min-width: 100px;',
+    'Sentence Generation Model': 'min-width: 190px;',
+    'Date Added': 'min-width: 80px;',
+    'Date Updated': 'min-width: 92px;',
+    'Comments': 'min-width: 200px;',
+}
+
+COLUMN_TO_COL_INDEX = dict([(k, idx) for idx, (k,v) in enumerate(COLUMN_TO_MIN_WIDTH.items())])
 
 # ------
 # Colors
@@ -64,7 +70,7 @@ COLORS = {
     'BOLD': '\033[1m',
     'NC': '\033[0m',
 }
-_COLOR_TO_CODE = {
+COLOR_TO_CODE = {
     'g': COLORS['GREEN'],
     'r': COLORS['RED'],
     'y': COLORS['YELLOW'],
@@ -74,11 +80,13 @@ _COLOR_TO_CODE = {
 }
 
 # Define a mapping for POS tags to their full names
+# TODO: complete this list and test it
 POS_MAP = {
     'a': 'adjective',
     'ad': 'adverbial',
     'ag': 'adjective morpheme',
     'an': 'nominal adjective',
+    'aux': 'auxiliary',
     'b': 'distinguishing word',
     'c': 'conjunction',
     'd': 'adverb',
@@ -135,58 +143,58 @@ COMMON_PARTICLES = {
 }
 
 FACEBOOK_LANGUAGES = {
-    'ar': 'ar_AR',
-    'cs': 'cs_CZ',
-    'de': 'de_DE',
-    'en': 'en_XX',
-    'es': 'es_XX',
-    'et': 'et_EE',
-    'fi': 'fi_FI',
-    'fr': 'fr_XX',
-    'gu': 'gu_IN',
-    'hi': 'hi_IN',
-    'it': 'it_IT',
-    'ja': 'ja_XX',
-    'kk': 'kk_KZ',
-    'ko': 'ko_KR',
-    'lt': 'lt_LT',
-    'lv': 'lv_LV',
-    'my': 'my_MM',
-    'ne': 'ne_NP',
-    'nl': 'nl_XX',
-    'ro': 'ro_RO',
-    'ru': 'ru_RU',
-    'si': 'si_LK',
-    'tr': 'tr_TR',
-    'vi': 'vi_VN',
-    'zh': 'zh_CN',
-    'af': 'af_ZA',
-    'az': 'az_AZ',
-    'bn': 'bn_IN',
-    'fa': 'fa_IR',
-    'he': 'he_IL',
-    'hr': 'hr_HR',
-    'id': 'id_ID',
-    'ka': 'ka_GE',
-    'km': 'km_KH',
-    'mk': 'mk_MK',
-    'ml': 'ml_IN',
-    'mn': 'mn_MN',
-    'mr': 'mr_IN',
-    'pl': 'pl_PL',
-    'ps': 'ps_AF',
-    'pt': 'pt_XX',
-    'sv': 'sv_SE',
-    'sw': 'sw_KE',
-    'ta': 'ta_IN',
-    'te': 'te_IN',
-    'th': 'th_TH',
-    'tl': 'tl_XX',
-    'uk': 'uk_UA',
-    'ur': 'ur_PK',
-    'xh': 'xh_ZA',
-    'gl': 'gl_ES',
-    'sl': 'sl_SI'
+  'ar': 'ar_AR',
+  'cs': 'cs_CZ',
+  'de': 'de_DE',
+  'en': 'en_XX',
+  'es': 'es_XX',
+  'et': 'et_EE',
+  'fi': 'fi_FI',
+  'fr': 'fr_XX',
+  'gu': 'gu_IN',
+  'hi': 'hi_IN',
+  'it': 'it_IT',
+  'ja': 'ja_XX',
+  'kk': 'kk_KZ',
+  'ko': 'ko_KR',
+  'lt': 'lt_LT',
+  'lv': 'lv_LV',
+  'my': 'my_MM',
+  'ne': 'ne_NP',
+  'nl': 'nl_XX',
+  'ro': 'ro_RO',
+  'ru': 'ru_RU',
+  'si': 'si_LK',
+  'tr': 'tr_TR',
+  'vi': 'vi_VN',
+  'zh': 'zh_CN',
+  'af': 'af_ZA',
+  'az': 'az_AZ',
+  'bn': 'bn_IN',
+  'fa': 'fa_IR',
+  'he': 'he_IL',
+  'hr': 'hr_HR',
+  'id': 'id_ID',
+  'ka': 'ka_GE',
+  'km': 'km_KH',
+  'mk': 'mk_MK',
+  'ml': 'ml_IN',
+  'mn': 'mn_MN',
+  'mr': 'mr_IN',
+  'pl': 'pl_PL',
+  'ps': 'ps_AF',
+  'pt': 'pt_XX',
+  'sv': 'sv_SE',
+  'sw': 'sw_KE',
+  'ta': 'ta_IN',
+  'te': 'te_IN',
+  'th': 'th_TH',
+  'tl': 'tl_XX',
+  'uk': 'uk_UA',
+  'ur': 'ur_PK',
+  'xh': 'xh_ZA',
+  'gl': 'gl_ES',
+  'sl': 'sl_SI'
 }
 
 
