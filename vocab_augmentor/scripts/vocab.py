@@ -27,7 +27,7 @@ TRANSL_MODEL = 'helsinki'
 
 LANG_DETECTORS = ['langdetect', 'langid', 'polyglot']
 
-# Mapping of short model names to full model names
+## Mapping of short model names to full model names
 GEN_MODEL_MAP = {
     'gemini': 'gemini-pro',
     'llama': 'meta-llama/Meta-Llama-3-8B-Instruct'
@@ -40,6 +40,7 @@ TRANSL_MODEL_MAP = {
     'llama': 'meta-llama/Meta-Llama-3-8B-Instruct'
 }
 
+## Table columns info
 COLUMN_TO_MIN_WIDTH = {
     'Word': 'min-width: 120px;', 
     'Pinyin (Word)': 'min-width: 120px;', 
