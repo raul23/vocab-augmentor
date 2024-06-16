@@ -20,6 +20,11 @@ languages.
 - **Audio Pronunciation**: Adds pronunciation sounds for new words using MeloTTS for supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 - **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access and further study, including clickable links to audio files.
 
+## Text Generation
+
+- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate example sentences.
+  - `Gemini 1.0 Pro` is faster as it uses an API.
+
 ## How It Works
 
 1. **Input**: Provide a list of known vocabulary words from language A with translations in language B.
@@ -44,6 +49,11 @@ languages.
    pip install jieba langcodes language_data pandas pypinyin sacremoses spacy transformers
    ```
    <!--- TODO: pip install -r requirements.txt --->
+
+## Performance Recommendations
+
+- **GPU Recommendation**: When using `llama 3-8b`, GPU usage is highly recommended 
+  for faster processing.
 
 ## API Key Management
 
@@ -120,6 +130,13 @@ learning tasks.
    vocab.py --vocab_list your_vocab_list.csv --input_text your_text.txt --model_name chosen_model
    ```
 3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
+
+## Known Issues and Limitations
+
+- **Chinese Text-to-Speech:** For Chinese text, `MeloTTS` may have difficulties
+  with single-character words and low volume on some words.
+  - Spanish TTS is good except for very small words like "y".
+  - Sound files are saved as `.wav.`
 
 ### Example CSV Structure
 
