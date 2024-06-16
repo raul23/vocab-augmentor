@@ -20,22 +20,6 @@ languages.
 - **Audio Pronunciation**: Adds pronunciation sounds for new words using MeloTTS for supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 - **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access and further study, including clickable links to audio files.
 
-## Experimental Features
-
-### Save Comments Button
-
-An experimental feature has been added to the HTML output, allowing users to 
-save comments directly in the browser. This feature includes:
-
-- **Save Comments Button**: A button on the HTML page that allows users to add 
-  comments in the 'Comments' column.
-- **Local Storage**: Comments are saved using the browser's local storage, 
-  enabling persistence across sessions.
-- **Editable Fields**: Users can write and save comments on any entry, enhancing 
-  interactivity and personal note-taking.
-
-This feature is still in the experimental stage.
-
 ## How It Works
 
 1. **Input**: Provide a list of known vocabulary words from language A with translations in language B.
