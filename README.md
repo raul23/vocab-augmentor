@@ -1,7 +1,14 @@
 # Vocab-Augmentor [work-in-progress]
 ## Overview
 
-**vocab.py** is a Python script designed to help language learners expand their vocabulary effortlessly. By leveraging advanced language models such as `facebook/mbart-large-50-many-to-many-mmt`, `Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any given text, translates them, and updates your personal vocabulary list. Additionally, it supports adding pronunciation sounds for new words using the `MeloTTS` text-to-speech library for supported languages.
+**vocab.py** is a Python script designed to help language learners expand their 
+vocabulary effortlessly. By leveraging advanced language models such as
+`facebook/mbart-large-50-many-to-many-mmt`, `Helsinki-NLP/opus-mt`,
+`Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any
+given text, translates them, and updates your personal vocabulary list.
+Additionally, it supports adding pronunciation sounds for new words using the
+`MeloTTS` and `facebook/mms-tts-por` text-to-speech libraries for supported
+languages.
 
 ## Features
 
@@ -37,6 +44,71 @@
    pip install jieba langcodes language_data pandas pypinyin sacremoses spacy transformers
    ```
    <!--- TODO: pip install -r requirements.txt --->
+
+## API Key Management
+
+To utilize the advanced translation and text generation features of
+`Gemini 1.0 Pro` and `llama 3-8b`, API keys are required. These keys must be
+saved as environment variables or can be retrieved from Kaggle Secrets. Follow
+the steps below to manage your API keys:
+
+### Setting Up Environment Variables
+
+1. **Gemini 1.0 Pro API Key**
+   - Save your Gemini 1.0 Pro API key as an environment variable named `GEMINI_API_KEY`.
+   - In a Unix-based system (Linux, macOS), add the following line to your `.bashrc`
+     or `.zshrc` file:
+     ```sh
+     export GEMINI_API_KEY='your_gemini_api_key'
+     ```
+   - In Windows, set the environment variable through the Command Prompt or System
+     Properties:
+     ```cmd
+     setx GEMINI_API_KEY "your_gemini_api_key"
+     ```
+
+2. **Hugging Face API Key for Llama 3-8b**
+   - Save your Hugging Face API key as an environment variable named `HF_API_KEY`.
+   - In a Unix-based system, add the following line to your `.bashrc` or `.zshrc` file:
+     ```sh
+     export HF_API_KEY='your_hugging_face_api_key'
+     ```
+   - In Windows, set the environment variable through the Command Prompt or System
+     Properties:
+     ```cmd
+     setx HF_API_KEY "your_hugging_face_api_key"
+     ```
+
+### Using Kaggle Secrets
+
+If you prefer to use Kaggle Secrets to manage your API keys, the script will
+automatically attempt to retrieve the keys if they are not found in the environment
+variables.
+
+1. **Store API Keys in Kaggle Secrets**
+   - In your Kaggle notebook, navigate to the "Add-ons" tab, select "Secrets", 
+     and add your keys:
+     - Key Name: `GEMINI_API_KEY`
+     - Key Value: `your_gemini_api_key`
+     - Key Name: `HF_API_KEY`
+     - Key Value: `your_hugging_face_api_key`
+
+2. **Access API Keys in the Script**
+   - The script includes logic to check for the keys in the Kaggle Secrets if 
+     they are not found in the environment variables. No additional steps are 
+     required.
+
+### Important Notes
+
+- Ensure your API keys are kept confidential and not shared publicly.
+- The script prioritizes environment variables over Kaggle Secrets. If both are 
+  set, the environment variables will be used.
+- Using API keys allows the script to access powerful language models and 
+  generate accurate translations and text examples efficiently.
+
+By following these steps, you can seamlessly integrate API keys into the 
+Vocab-Augmentor script and leverage its full capabilities for advanced language 
+learning tasks.
 
 ## Usage
 
