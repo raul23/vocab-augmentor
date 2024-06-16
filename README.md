@@ -131,13 +131,6 @@ learning tasks.
    ```
 3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
 
-## Known Issues and Limitations
-
-- **Chinese Text-to-Speech:** For Chinese text, `MeloTTS` may have difficulties
-  with single-character words and low volume on some words.
-  - Spanish TTS is good except for very small words like "y".
-  - Sound files are saved as `.wav.`
-
 ### Example CSV Structure
 
 The CSV file might have the following structure:
@@ -146,6 +139,13 @@ The CSV file might have the following structure:
 |---------------|--------|-----------------------|------|--------------------------------|
 | 新词          | xīn cí | New word              | noun | file:///path/to/audio/xinci.wav |
 | 例子          | lì zi  | Example               | noun | file:///path/to/audio/lizi.wav  |
+
+## Known Issues and Limitations
+
+- **Chinese Text-to-Speech:** For Chinese text, `MeloTTS` may have difficulties
+  with single-character words and low volume on some words.
+  - Spanish TTS is good except for very small words like "y".
+  - Sound files are saved as `.wav.`
 
 ## Contributing
 
