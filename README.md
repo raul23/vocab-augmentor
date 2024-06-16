@@ -127,8 +127,8 @@ The CSV file might have the following structure:
 
 | Word (Lang A) | Pinyin | Translation (Lang B) | POS  | Audio Path                     |
 |---------------|--------|-----------------------|------|--------------------------------|
-| 新词          | xīn cí | New word              | noun | file:///path/to/audio/xinci.mp3 |
-| 例子          | lì zi  | Example               | noun | file:///path/to/audio/lizi.mp3  |
+| 新词          | xīn cí | New word              | noun | file:///path/to/audio/xinci.wav |
+| 例子          | lì zi  | Example               | noun | file:///path/to/audio/lizi.wav  |
 
 ## Contributing
 
