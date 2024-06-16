@@ -34,11 +34,7 @@ save comments directly in the browser. This feature includes:
 - **Editable Fields**: Users can write and save comments on any entry, enhancing 
   interactivity and personal note-taking.
 
-To use this feature in the script, you need to use the option 
-`--ascb, --add_save_comment_button`.
-
-This feature is still in the experimental stage and may have limitations or 
-bugs. User feedback is appreciated to help improve its functionality.
+This feature is still in the experimental stage.
 
 ## How It Works
 
