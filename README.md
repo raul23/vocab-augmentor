@@ -10,6 +10,8 @@ Additionally, it supports adding pronunciation sounds for new words using the
 `MeloTTS` and `facebook/mms-tts-por` text-to-speech libraries for supported
 languages.
 
+![Table (HTML) displaying translation data including audio links, POS](./docs/images/table_sol_y_cielo.png)
+
 ## Features
 
 - **Multi-Language Support**: Supports a variety of languages, making it versatile for learners of different languages.
