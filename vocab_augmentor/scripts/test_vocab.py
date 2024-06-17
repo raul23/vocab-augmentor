@@ -211,3 +211,38 @@ def setup_argparser():
         '--ascb', '--add_save_comments_button', dest='add_save_comments_button', action='store_true', 
         help="Flag to add 'Save Comments' button in the HTML page of the table. (experimental)") 
     return parser
+
+
+def main():
+    exit_code = 0
+    parser = setup_argparser()
+
+    # Process arguments
+    if not args.csv_filepath:
+        args.csv_filepath = ""
+        
+    # Translate short model names to full model names
+    args.transl_model = TRANSL_MODEL_MAP.get(args.transl_model, TRANSL_MODEL)
+    args.gen_model = GEN_MODEL_MAP.get(args.gen_model, GEN_MODEL)
+    
+    vocab_aug = VocabAugmentor()
+    vocab_aug.translate(args.text, 
+                        args.target_lang, 
+                        args.text_origin,
+                        lang_detector=args.lang_detector, 
+                        transl_model_name=args.transl_model, 
+                        gen_model_name=args.gen_model, 
+                        vocab_csv_filepath=args.csv_filepath, 
+                        audio_main_dirpath=args.audio_dirpath,
+                        audio_base_url=args.audio_base_url,
+                        add_pos=args.add_pos, 
+                        add_sentences=args.add_sentences, 
+                        add_audio_text=args.add_audio_text, 
+                        add_audio_words=args.add_audio_words,
+                        add_save_comments_button=args.add_save_comments_button)
+    return exit_code
+
+
+if __name__ == '__main__':
+    retcode = main()
+    print(f'Program exited with {retcode}')
