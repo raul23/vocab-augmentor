@@ -34,10 +34,6 @@ languages.
 
 ## Models
 
-Here's an improved version of the Dependencies section:
-
----
-
 ## Dependencies
 
 ### Requirements
