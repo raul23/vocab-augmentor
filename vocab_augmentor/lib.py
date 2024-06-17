@@ -1,6 +1,6 @@
-#################
-## Config options
-#################
+#########################
+## Default Config Options
+#########################
 AUDIO_MAIN_DIRPATH = "~/audio/"
 
 GEN_MODEL = 'gemini'
