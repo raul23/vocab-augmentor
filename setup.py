@@ -59,7 +59,7 @@ setup(name='vocab-augmentor',
         'Programming Language :: Python :: 3',
       ],
       keywords='language vocabulary translation segmentation language-learning natural-language-processing text-processing education',
-      url='https://github.com/raul23/Vocab-Augmentor',
+      url='https://github.com/raul23/vocab-augmentor',
       author='Raul C.',
       author_email='rchfe23@gmail.com',
       license='MIT',
@@ -73,7 +73,7 @@ setup(name='vocab-augmentor',
         'console_scripts': ['vocab=vocab_augmentor.scripts.vocab:main']
       },
       project_urls={  # Optional
-          'Bug Reports': 'https://github.com/raul23/Vocab-Augmentor/issues',
-          'Source': 'https://github.com/raul23/Vocab-Augmentor',
+          'Bug Reports': 'https://github.com/raul23/vocab-augmentor/issues',
+          'Source': 'https://github.com/raul23/vocab-augmentor',
       },
       zip_safe=False)
