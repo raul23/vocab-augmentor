@@ -16,6 +16,8 @@ import warnings
 from collections import defaultdict
 from datetime import datetime
 
+from vocab_augmentor import __version__
+
 # Suppress the specific warning by setting the logging level to ERROR
 logging.getLogger("transformers").setLevel(logging.ERROR)
 # Suppress all UserWarnings
@@ -1552,6 +1554,10 @@ def setup_argparser():
         add_help=False,
         formatter_class=lambda prog: MyFormatter(
             prog, max_help_position=50, width=width))
+    parser.add_argument(
+            '-v', '--version', action='version',
+            version=f'%(prog)s v{__version__}',
+            help="Show program's version number and exit.")
     parser.add_argument(
         '-h', '--help', action='help',
         help='Display detailed usage instructions and exit the program.')
