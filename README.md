@@ -29,8 +29,6 @@ languages.
   For Portuguese text-to-speech, `facebook/mms-tts-por` is used.
 - **Selective Module Installation**: Modules are installed only when needed for
   specific tasks.
-- **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access
-  and further study, including clickable links to audio files.
 - **CSV and HTML Export**: Updates and exports the vocabulary list to a CSV file
   and a feature-rich HTML file.
   - HTML features include `DataTables` stylesheet, column reordering, resizable
