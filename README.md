@@ -20,20 +20,6 @@ languages.
 - **Audio Pronunciation**: Adds pronunciation sounds for new words using MeloTTS for supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 - **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access and further study, including clickable links to audio files.
 
-## Text Generation
-
-- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate example sentences.
-  - `Gemini 1.0 Pro` is faster as it uses an API.
-
-## How It Works
-
-1. **Input**: Provide a list of known vocabulary words from language A with translations in language B.
-2. **Text Processing**: Input text in language A for processing.
-3. **Segmentation & Translation**: The script segments the text, translates each word using the chosen language model, and checks if the word is new.
-4. **Add Pronunciation**: For new words in supported languages, generate pronunciation sounds using the MeloTTS text-to-speech library and save the audio files in a designated directory (e.g., `audio/`).
-5. **Update Vocabulary List**: Adds new words to the vocabulary list along with their translation, pinyin (if applicable), POS, and clickable links to the pronunciation sound files.
-6. **Export**: The updated vocabulary list is saved to a CSV file, with clickable links to the audio files included.
-
 ## Installation ⭐
 
 Install the package `vocab_augmentor` with `pip`:
@@ -54,10 +40,13 @@ pip install git+https://github.com/raul23/vocab-augmentor/#egg=vocab-augmentor
    ```
 
 ## Performance Recommendations
-
+    
 - **GPU Recommendation**: When using `llama 3-8b`, GPU usage is highly recommended 
   for faster processing.
-
+  
+- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate example sentences.
+  - `Gemini 1.0 Pro` is faster as it uses an API.
+    
 ## API Key Management
 
 To utilize the advanced translation and text generation features of
