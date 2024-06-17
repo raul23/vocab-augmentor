@@ -56,7 +56,7 @@ breakdown of the modules required based on different functionalities:
    - **gemini-pro**:
      - `google.generativeai` (for API connection using `GEMINI_API_KEY`)
    - **meta-llama/Meta-Llama-3-8B-Instruct**:
-     - `huggingface_hub` (to login and download `LLM llama 3 8b`)
+     - `huggingface_hub` (to login and download `llama 3-8b`)
      - `torch`
      - `transformers`
 
