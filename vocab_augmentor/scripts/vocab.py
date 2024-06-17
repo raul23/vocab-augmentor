@@ -13,6 +13,7 @@ import tempfile
 import time
 import warnings
 
+from collections import defaultdict
 from datetime import datetime
 
 # Suppress the specific warning by setting the logging level to ERROR
@@ -20,14 +21,19 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 # Suppress all UserWarnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-UDIO_MAIN_DIRPATH = "~/audio/"
+###################################
+## Python Maps and Global Variables
+###################################
+AUDIO_MAIN_DIRPATH = "~/audio/"
 GEN_MODEL = 'gemini'
 LANG_DETECTOR = 'polyglot'
 TRANSL_MODEL = 'helsinki'
 
 LANG_DETECTORS = ['langdetect', 'langid', 'polyglot']
 
-## Mapping of short model names to full model names
+# ------------------------------------------------
+# Mapping of short model names to full model names
+# ------------------------------------------------
 GEN_MODEL_MAP = {
     'gemini': 'gemini-pro',
     'llama': 'meta-llama/Meta-Llama-3-8B-Instruct'
@@ -40,12 +46,13 @@ TRANSL_MODEL_MAP = {
     'llama': 'meta-llama/Meta-Llama-3-8B-Instruct'
 }
 
-## Table columns info
+# Table column information
 COLUMN_TO_MIN_WIDTH = {
     'Word': 'min-width: 120px;', 
     'Pinyin (Word)': 'min-width: 120px;', 
     'Audio (Word)': 'min-width: 120px;',  
     'Translation': 'min-width: 120px;',
+    'Pinyin (Translation)': 'min-width: 120px;', 
     'POS': 'min-width: 60px;', 
     'Word Origin': 'min-width: 120px;',
     'Example Sentences': 'min-width: 400px;',
@@ -56,8 +63,6 @@ COLUMN_TO_MIN_WIDTH = {
     'Date Updated': 'min-width: 92px;',
     'Comments': 'min-width: 200px;',
 }
-
-COLUMN_TO_COL_INDEX = dict([(k, idx) for idx, (k,v) in enumerate(COLUMN_TO_MIN_WIDTH.items())])
 
 # ------
 # Colors
@@ -198,41 +203,93 @@ FACEBOOK_LANGUAGES = {
   'sl': 'sl_SI'
 }
 
-
+##########################
+# Classes: Language Models
+##########################
 class LanguageModel:
     def __init__(self, src_lang, target_lang, model_name):
+        """
+        Base class for language models that perform text generation and translation.
+
+        Args:
+            src_lang (str): Source language code (e.g., 'en', 'fr').
+            target_lang (str): Target language code (e.g., 'zh', 'es').
+            model_name (str): Name or identifier of the pretrained model.
+        
+        Attributes:
+            src_lang_fullname (str): Full name of the source language.
+            target_lang_fullname (str): Full name of the target language.
+            model_name (str): Name or identifier of the pretrained model.
+        """
         self.src_lang = src_lang
         self.target_lang = target_lang
         self.src_lang_fullname = get_language_full_name(src_lang)
         self.target_lang_fullname = get_language_full_name(target_lang)
         self.model_name = model_name
         
+    def get_translation_request(self, text):
+        request = f"Translate the following text into {self.target_lang_fullname} without any " + \
+                  f"additional information or commentary: {text}"
+        return request
+        
     def get_text_generation_request(self, words, nb_sentences):
+        """
+        Generates a request template for text generation and translation.
+
+        Args:
+            words (str): Words to be included in the generated sentences.
+            nb_sentences (int): Number of sentences to generate.
+        
+        Returns:
+            str: The generated request template.
+        """
         request = f"""
         Generate {nb_sentences} sentences in {self.src_lang_fullname} with the words '{words}' and
-        provide their translations in {self.target_lang_fullname}. Use the following template:
-        
-        add text for sentence 1 here
-        add translation for sentence 1 here
-        
-        add text for sentence 2 here
-        add translation for sentence 2 here
+        provide their translations in {self.target_lang_fullname}.
         """
+        if self.src_lang == 'zh' or  self.target_lang == 'zh':
+            request += "If the sentence or translation is in Chinese, provide also its pinyin representation. "
+        request += "Strictly provide only the sentences and their translations. " + \
+                   "Do not include any introductions, explanations, examples, or notes."
         return request
     
     def generate_text(self, words, nb_sentences=2):
+        """
+        Generates text based on input words.
+
+        Args:
+            words (str): Words to be included in the generated sentences.
+            nb_sentences (int, optional): Number of sentences to generate. Defaults to 2.
+        
+        Raises:
+            NotImplementedError: This method must be implemented in derived classes.
+        """
         raise NotImplementedError("generate_text() not implemented!")
     
     def translate_text(self):
+        """
+        Translates text from source language to target language.
+
+        Raises:
+            NotImplementedError: This method must be implemented in derived classes.
+        """
         raise NotImplementedError("translate_text() not implemented!")
         
 
 # facebook/mbart-large-50-many-to-many-mmt
 class MBart(LanguageModel):
     def __init__(self, src_lang, target_lang):
+        """
+        Initializes the MBart class for multilingual translation.
+
+        Args:
+            src_lang (str): Source language code (e.g., 'en', 'fr').
+            target_lang (str): Target language code (e.g., 'zh', 'es').
+        """
         super().__init__(src_lang, target_lang, 
-                         model_name="facebook/mbart-large-50-many-to-many-mmt",)
-        # Initialize mBART model and tokenizer
+                         model_name="facebook/mbart-large-50-many-to-many-mmt")
+        
+        ## Import transformers and initialize MBart model and tokenizer
         # import transformers
         transformers = import_module("transformers")
         # from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
@@ -243,6 +300,17 @@ class MBart(LanguageModel):
         self.tokenizer.src_lang = FACEBOOK_LANGUAGES[src_lang]
     
     def translate_text(self, text, return_tensors="pt", skip_special_tokens=True):
+        """
+        Translates text from source language to target language using MBart model.
+
+        Args:
+            text (str): Input text to be translated.
+            return_tensors (str, optional): Return type of the generated tensor. Defaults to "pt".
+            skip_special_tokens (bool, optional): Whether to skip special tokens. Defaults to True.
+        
+        Returns:
+            str: Translated text in the target language.
+        """
         encoded_text = self.tokenizer(text, return_tensors=return_tensors)
         generated_tokens = self.model.generate(
             **encoded_text,
@@ -254,10 +322,24 @@ class MBart(LanguageModel):
 # Helsinki-NLP/opus-mt
 class HelsinkiNLP(LanguageModel):
     def __init__(self, src_lang, target_lang):
-        super().__init__(src_lang, target_lang, model_name="Helsinki-NLP/opus-mt-itc-en")
-                        # model_name=f"Helsinki-NLP/opus-mt-{src_lang}-{target_lang}")
-        # Initialize the translation pipeline
+        """
+        Initializes the HelsinkiNLP class for translation using Opus MT.
+
+        Args:
+            src_lang (str): Source language code (e.g., 'en', 'fr').
+            target_lang (str): Target language code (e.g., 'zh', 'es').
+        """
+        # Check if the source language is an italic language and target language is english
+        # See https://huggingface.co/Helsinki-NLP/opus-mt-itc-en
+        if src_lang in ['it', 'ca', 'rm', 'es', 'ro', 'gl', 'sc', 'co', 'wa', 'pt', 'oc', 'an', 'id', 'fr', 'ht', 'itc', 'en'] \
+            and target_lang == 'en':
+            model_name = "Helsinki-NLP/opus-mt-itc-en"
+        else:
+            model_name = f"Helsinki-NLP/opus-mt-{src_lang}-{target_lang}"
         
+        super().__init__(src_lang, target_lang, model_name=model_name)
+
+        ## Import transformers and initialize translation pipeline
         # import transformers
         transformers = import_module("transformers")
         # from transformers import pipeline
@@ -265,6 +347,16 @@ class HelsinkiNLP(LanguageModel):
         self.translator = pipeline("translation", model=self.model_name)
     
     def translate_text(self, text, max_length=512):
+        """
+        Translates text from source language to target language using Opus MT.
+
+        Args:
+            text (str): Input text to be translated.
+            max_length (int, optional): Maximum length of the translated text. Defaults to 512.
+        
+        Returns:
+            str: Translated text in the target language.
+        """
         translated = self.translator(text, max_length=max_length)
         return translated[0]['translation_text']
     
@@ -272,22 +364,42 @@ class HelsinkiNLP(LanguageModel):
 # gemini-pro
 class GeminiPro(LanguageModel):
     def __init__(self, src_lang, target_lang):
+        """
+        Initializes the GeminiPro class for text generation and translation.
+
+        Args:
+            src_lang (str): Source language code (e.g., 'en', 'fr').
+            target_lang (str): Target language code (e.g., 'zh', 'es').
+        """
         super().__init__(src_lang, target_lang, model_name="gemini-pro")
-        # Configure the Gemini model
+        
+        ## Configure Gemini model using API key
         api_key = get_api_key("GEMINI_API_KEY")
         # import google.generativeai as genai
         genai = import_with_importlib("google.generativeai", alias="genai")
         genai.configure(api_key = api_key)
         del api_key
+        
+        # Initialize GenerativeModel for text generation
         genmodel = genai.GenerativeModel(model_name=self.model_name)
         self.chat = genmodel.start_chat()
-        
+    
+    # TODO: add reference 
     def _send_message(self, request):
-        # TODO: todo
+        """
+        Sends a message to GeminiPro model for text generation or translation.
+
+        Args:
+            request (str): The request message for text generation or translation.
+        
+        Returns:
+            str: Response message from GeminiPro model.
+        """
         import google
         completed = False
         sleep = 0
         sleep_time = 2
+        
         while not completed:
             try:
                 response = self.chat.send_message(request)
@@ -305,19 +417,46 @@ class GeminiPro(LanguageModel):
         return response.text
     
     def generate_text(self, words, nb_sentences=2):
+        """
+        Generates text using GeminiPro model.
+
+        Args:
+            words (str): Words to be included in the generated sentences.
+            nb_sentences (int, optional): Number of sentences to generate. Defaults to 2.
+        
+        Returns:
+            str: Generated text.
+        """
         request = self.get_text_generation_request(words, nb_sentences)
         return self._send_message(request)
     
     def translate_text(self, text):
-        return self._send_message(f"Translate this into {self.target_lang_fullname}: {text}")
+        """
+        Translates text using GeminiPro model.
+
+        Args:
+            text (str): Text to be translated.
+        
+        Returns:
+            str: Translated text.
+        """
+        return self._send_message(self.get_translation_request(text))
     
     
 # meta-llama/Meta-Llama-3-8B-Instruct
 class Llama3(LanguageModel):
     def __init__(self, src_lang, target_lang):
+        """
+        Initializes the Llama3 class for text generation and translation.
+
+        Args:
+            src_lang (str): Source language code (e.g., 'en', 'fr').
+            target_lang (str): Target language code (e.g., 'zh', 'es').
+        """
         super().__init__(src_lang, target_lang, 
                          model_name="meta-llama/Meta-Llama-3-8B-Instruct")
         
+        ## Import huggingface_hub and login with API key
         # from huggingface_hub import login
         login = import_module("huggingface_hub", "login")
         api_key = get_api_key("HF_API_KEY")
@@ -334,7 +473,7 @@ class Llama3(LanguageModel):
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_flash_sdp(False)
         
-        # Setup Pipeline and Tokenizer
+        ## Setup text generation pipeline and tokenizer
         # Create a text generation pipeline with the specified model
         # - Use bfloat16 precision for better performance and lower memory usage
         # - Automatically map the model to available GPUs
@@ -346,10 +485,10 @@ class Llama3(LanguageModel):
         #  To handle the warning "Setting pad_token_id to eos_token_id", explicitly specify the pad_token_id in the pipeline setup.
         self.pipeline = transformers.pipeline(
             "text-generation",
-            model=model_name,
+            model=self.model_name,
             model_kwargs={"torch_dtype": torch.bfloat16},
             device_map="auto",
-            pad_token_id=transformers.AutoTokenizer.from_pretrained(model_name).eos_token_id
+            pad_token_id=transformers.AutoTokenizer.from_pretrained(self.model_name).eos_token_id
         )
 
         # Define terminators for the text generation
@@ -362,6 +501,20 @@ class Llama3(LanguageModel):
         ]
         
     def _gen_text(self, request, context=None, max_new_tokens=256, do_sample=True, temperature=0.6, top_p=0.9):
+        """
+        Generates text using Llama3 model.
+
+        Args:
+            request (str): The request message for text generation.
+            context (str, optional): Context information for text generation. Defaults to None.
+            max_new_tokens (int, optional): Maximum number of new tokens. Defaults to 256.
+            do_sample (bool, optional): Whether to sample outputs randomly. Defaults to True.
+            temperature (float, optional): Sampling temperature. Defaults to 0.6.
+            top_p (float, optional): Top-k sampling parameter. Defaults to 0.9.
+        
+        Returns:
+            str: Generated text.
+        """
         messages = [
             {"role": "user", "content": request},
         ]
@@ -386,19 +539,67 @@ class Llama3(LanguageModel):
         return outputs[0]["generated_text"][-1]["content"]
         
     def generate_text(self, words, nb_sentences=2, context=None, max_new_tokens=256, do_sample=True, temperature=0.6, top_p=0.9):
+        """
+        Generates text using Llama3 model.
+
+        Args:
+            words (str): Words to be included in the generated sentences.
+            nb_sentences (int, optional): Number of sentences to generate. Defaults to 2.
+            context (str, optional): Context information for text generation. Defaults to None.
+            max_new_tokens (int, optional): Maximum number of new tokens. Defaults to 256.
+            do_sample (bool, optional): Whether to sample outputs randomly. Defaults to True.
+            temperature (float, optional): Sampling temperature. Defaults to 0.6.
+            top_p (float, optional): Top-k sampling parameter. Defaults to 0.9.
+        
+        Returns:
+            str: Generated text.
+        """
         request = self.get_text_generation_request(words, nb_sentences)
         return self._gen_text(request, context, max_new_tokens, do_sample, temperature, top_p)
         
     
     def translate_text(self, text, context=None, max_new_tokens=256, do_sample=True, temperature=0.6, top_p=0.9):
-        # Create the initial message with the user's request
-        request = f"Provide just the answer (a single one) by translating the following into {self.target_lang_fullname}: {text}"
+        """
+        Translates text using Llama3 model.
 
+        Args:
+            text (str): Text to be translated.
+            context (str, optional): Context information for translation. Defaults to None.
+            max_new_tokens (int, optional): Maximum number of new tokens. Defaults to 256.
+            do_sample (bool, optional): Whether to sample outputs randomly. Defaults to True.
+            temperature (float, optional): Sampling temperature. Defaults to 0.6.
+            top_p (float, optional): Top-k sampling parameter. Defaults to 0.9.
+        
+        Returns:
+            str: Translated text.
+        """
+        # Create the initial message with the user's request
+        request = self.get_translation_request(text)
         return self._gen_text(request, context, max_new_tokens, do_sample, temperature, top_p)
 
 
+#####################
+# Classes: TTS models
+#####################
 class FacebookTTS:
     def __init__(self, model_name, verbose=False):
+        """
+        Initializes the FacebookTTS class with the specified model name.
+
+        Args:
+            model_name (str): The name of the pretrained model.
+            verbose (bool, optional): Whether to print verbose outputs. Default is False.
+        
+        Attributes:
+            torch: The imported torch module.
+            scipy: The imported scipy module.
+            np: The imported numpy module.
+            model (VitsModel): The loaded VitsModel from transformers.
+            tokenizer (AutoTokenizer): The loaded AutoTokenizer from transformers.
+        """
+        self.model_name = model_name
+        
+        ## Import necessary modules
         # from transformers import VitsModel, AutoTokenizer
         VitsModel = import_module("transformers", "VitsModel")
         AutoTokenizer = import_module("transformers", "AutoTokenizer")
@@ -409,36 +610,87 @@ class FacebookTTS:
         # import numpy
         self.np = import_module("numpy", alias="np")
         
+        # Load model and tokenizer
         self.model = VitsModel.from_pretrained(model_name)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
     
-    def generate_speech(self, text, **kwargs): 
+    def generate_speech(self, text, **kwargs):
+        """
+        Generates speech from text input using the loaded model.
+
+        Args:
+            text (str): The input text to generate speech from.
+            **kwargs: Additional keyword arguments for tokenization.
+        
+        Returns:
+            str: The path to the generated audio file.
+        """
+        # Tokenize the input text
         inputs = self.tokenizer(text, return_tensors="pt")
+        
+        # Generate waveform from model
         with self.torch.no_grad():
             output = self.model(**inputs).waveform
+            
+        # Generate a random temporary filename with .wav suffix
         audio_path = get_random_temp_filename(".wav")
-        # Convert the PyTorch tensor to a NumPy array
+        
+        # Convert PyTorch tensor to NumPy array
         output_np = output.cpu().numpy()
+        
         # Ensure the data is in the correct shape (1D array)
         if len(output_np.shape) > 1:
             output_np = output_np.squeeze()
+        
         # Write the NumPy array to a WAV file
         self.scipy.io.wavfile.write(audio_path, rate=self.model.config.sampling_rate, data=output_np)
+        
         return audio_path
        
     
 class MeloTTS:
     def __init__(self, verbose=False):
+        """
+        Initializes the MeloTTS class with the specified verbosity setting.
+
+        Args:
+            verbose (bool, optional): Whether to print verbose outputs. Default is False.
+        
+        Attributes:
+            client (Client): The Gradio Client instance for interacting with MeloTTS.
+        """
+        self.model_name = "MeloTTS"
+        
+        ## Import Gradio Client module
         # from gradio_client import Client
         Client = import_module("gradio_client", "Client")
+        
+        # Initialize Gradio Client for MeloTTS
         self.client = Client("mrfakename/MeloTTS", verbose=verbose)
     
     def generate_speech(self, text, lang, event_listener="predict"):
+        """
+        Generates speech from text input using the MeloTTS model.
+
+        Args:
+            text (str): The input text to generate speech from.
+            lang (str): The language code for selecting the speaker.
+            event_listener (str, optional): The type of event listener ('predict' or 'submit'). Default is 'predict'.
+        
+        Returns:
+            str or Job: The path to the generated audio file if event_listener is 'predict',
+                       or a job if event_listener is 'submit'.
+        
+        Raises:
+            ValueError: If an unsupported event listener is provided.
+        """
+        # Determine speaker based on language
         if lang == "en":
             speaker = "EN-Default"
         else:
             speaker = lang.upper()
             
+        # Perform prediction or submit job based on event_listener
         if event_listener == "predict":
             audio_path = self.client.predict(
                 text=text,
@@ -461,54 +713,185 @@ class MeloTTS:
             raise ValueError(f"Unsupported event listener: {event_listener}")
 
     
+###########
+# Functions
+###########
 def color(msg, msg_color='y', bold_msg=False):
+    """
+    Applies color formatting to a message.
+
+    Args:
+        msg (str): The message to be colored.
+        msg_color (str, optional): The color to apply to the message. Defaults to 'y'.
+        bold_msg (bool, optional): Whether to make the message bold. Defaults to False.
+    
+    Returns:
+        str: The colored message.
+    
+    Raises:
+        AssertionError: If an unsupported color is specified.
+    """
     msg_color = msg_color.lower()
-    colors = list(_COLOR_TO_CODE.keys())
+    colors = list(COLOR_TO_CODE.keys())
     assert msg_color in colors, f'Wrong color: {msg_color}. Only these ' \
-                                f'colors are supported: {msg_color}'
+                                f'colors are supported: {colors}'
     msg = bold(msg) if bold_msg else msg
-    msg = msg.replace(COLORS['NC'], COLORS['NC']+_COLOR_TO_CODE[msg_color])
-    return f"{_COLOR_TO_CODE[msg_color]}{msg}{COLORS['NC']}"
+    msg = msg.replace(COLORS['NC'], COLORS['NC']+COLOR_TO_CODE[msg_color])
+    return f"{COLOR_TO_CODE[msg_color]}{msg}{COLORS['NC']}"
 
 
 def blue(msg):
+    """
+    Applies blue color to a message.
+
+    Args:
+        msg (str): The message to be colored in blue.
+    
+    Returns:
+        str: The colored message in blue.
+    """
     return color(msg, 'b')
 
 
 def bold(msg):
+    """
+    Makes the message bold.
+
+    Args:
+        msg (str): The message to be made bold.
+    
+    Returns:
+        str: The bold message.
+    """
     return color(msg, 'bold')
 
 
 def green(msg):
+    """
+    Applies green color to a message.
+
+    Args:
+        msg (str): The message to be colored in green.
+    
+    Returns:
+        str: The colored message in green.
+    """
     return color(msg, 'g')
 
 
 def red(msg):
+    """
+    Applies red color to a message.
+
+    Args:
+        msg (str): The message to be colored in red.
+    
+    Returns:
+        str: The colored message in red.
+    """
     return color(msg, 'r')
 
 
 def violet(msg):
+    """
+    Applies violet color to a message.
+
+    Args:
+        msg (str): The message to be colored in violet.
+    
+    Returns:
+        str: The colored message in violet.
+    """
     return color(msg, 'v')
 
 
 def yellow(msg):
+    """
+    Applies yellow color to a message.
+
+    Args:
+        msg (str): The message to be colored in yellow.
+    
+    Returns:
+        str: The colored message in yellow.
+    """
     return color(msg)
 
 
-def get_default_message(default_value):
-    return green(f' (default: {default_value})')
+def build_index(file_path):
+    """
+    Builds an index from the CSV file where each key is a word from the "Word" column,
+    and each value is a list of row numbers that contain that word.
+    
+    Args:
+        file_path (str): The path to the CSV file.
+    
+    Returns:
+        dict: An index with words as keys and lists of row numbers as values.
+        list: All rows in the CSV file.
+    
+    Raises:
+        IOError: If an error occurs while reading the file.
+    """
+    if not os.path.exists(file_path):
+        # raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+        return {}, []
+    
+    index = defaultdict(list)
+    rows = []
+    
+    try:
+        with open(file_path, 'r', newline='', encoding='utf-8-sig') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for i, row in enumerate(reader):
+                rows.append(row)
+                index[row['Word']].append(i)
+    except IOError as e:
+        raise IOError(f"An error occurred while reading the file: {e}")
+    
+    return index, rows
 
 
+# TODO: not used
+def create_temp_file(data, mode='w+b'):
+    """
+    Creates a temporary file with the given data in a temporary folder with a random filename.
+    
+    Args:
+        data (str or bytes): The data to be written to the temporary file.
+        mode (str): The mode in which the file is opened. Default is 'w+b' for binary writing.
+    
+    Returns:
+        str: The path to the created temporary file, or None if an error occurs.
+        
+    Raises:
+        Exception: If an error occurs during file creation.
+    """
+    try:
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, mode=mode) as temp_file:
+            temp_file.write(data)
+            temp_file_path = temp_file.name
+        #print(f"Temporary file created successfully at: {temp_file_path}")
+        return temp_file_path
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+    
+    
 def create_text_file(content, path):
     """
     Creates a text file with the given content at the specified path.
     
-    Parameters:
-    content (str): The content to be written to the text file.
-    path (str): The path where the text file will be saved.
+    Args:
+        content (str): The content to be written to the text file.
+        path (str): The path where the text file will be saved.
     
     Returns:
-    None
+        str: The path to the created text file, or None if an error occurs.
+        
+    Raises:
+        Exception: If an error occurs during file creation.
     """
     try:
         with open(path, 'w') as file:
@@ -521,6 +904,19 @@ def create_text_file(content, path):
 
 
 def detect_language(text, lang_detector):
+    """
+    Detects the language of the given text using the specified language detection method.
+
+    Args:
+        text (str): The text whose language needs to be detected.
+        lang_detector (str): The language detection method to use. Supported values are 'langdetect', 'langid', or 'polyglot'.
+
+    Returns:
+        str or None: The detected language code (e.g., 'en' for English), or None if language detection fails.
+
+    Raises:
+        ValueError: If an unsupported language detector is provided.
+    """
     if lang_detector == "langdetect":
         return detect_language_with_langdetect(text)
     elif lang_detector == "langid":
@@ -532,18 +928,67 @@ def detect_language(text, lang_detector):
     
 
 def detect_language_with_langdetect(text):
+    """
+    Detects the language of the given text using the langdetect library.
+
+    Args:
+        text (str): The text whose language needs to be detected.
+
+    Returns:
+        str or None: The detected language code (e.g., 'en' for English), or None if language detection fails.
+        
+    Raises:
+        LangDetectException: If language detection fails.
+    """
+    # langdetect fails with `text = "今天我很高兴"`, it detects it as ko (korean)
+    # detects `text = "Estou feliz"` as pt
+
+    # Install langdetect
+    verify_and_install_packages(["langdetect"])
+    
+    ## Imports
+    # from langdetect import detect, DetectorFactory
+    detect = import_module("langdetect", "detect")
+    DetectorFactory = import_module("langdetect", "DetectorFactory")
+    # from langdetect import lang_detect_exception
+    lang_detect_exception = import_module("langdetect", "lang_detect_exception")
+
+    # For langdetect
+    DetectorFactory.seed = 0
+
     try:
         # Detect the language
-        # Will return zh-cn, zh-tw (no 2-letters code), see https://pypi.org/project/langdetect/
+        # Will return zh-cn and zh-tw (not a 2-letters code), see https://pypi.org/project/langdetect/
         language_code = detect(text)
         return language_code
-    except LangDetectException as e:
+    except lang_detect_exception.LangDetectException as e:
         # Handle cases where the language could not be detected
         print(f"Language detection failed: {e}")
         return None
 
 
 def detect_language_with_langid(text):
+    """
+    Detects the language of the given text using the langid library.
+
+    Args:
+        text (str): The text whose language needs to be detected.
+
+    Returns:
+        str or None: The detected language code (e.g., 'en' for English), or None if language detection fails.
+        
+    Raises:
+        error: If language detection fails.
+    """
+    # langid detects `text = "今天我很高兴"` as zh (chinese)
+    # fails to detet `text = "Estou feliz"` as pt, detects it as cy
+    
+    # Install languid
+    verify_and_install_packages(["langid"])
+    
+    # import langid
+    langid = import_module("langid")
+
     try:
         # Detect the language
         language_code, _ = langid.classify(text)
@@ -556,6 +1001,33 @@ def detect_language_with_langid(text):
 
 
 def detect_language_with_polyglot(text):
+    """
+    Detects the language of the given text using the polyglot library.
+
+    Args:
+        text (str): The text whose language needs to be detected.
+
+    Returns:
+        str or None: The detected language code (e.g., 'en' for English), or None if language detection fails.
+        
+    Raises:
+        error: If language detection fails.
+    """
+    # polyglot detects `text = "今天我很高兴"` as chinese and `text = "Estou feliz"` as pt
+    
+    # Install polyglot and its necessary packages
+    # TODO important: are these necessary packages?
+    verify_and_install_packages(["polyglot", "pyicu", "pycld2", "pycld3"])
+    
+    ## Imports
+    # from polyglot.detect import Detector
+    Detector = import_module("polyglot.detect", "Detector")
+    # from polyglot.detect.base import logger
+    logger = import_module("polyglot.detect.base", "logger")
+
+    # Suppress polyglot logging
+    logger.setLevel(logging.ERROR)    
+    
     try:
         # Detect the language
         detector = Detector(text)
@@ -575,7 +1047,7 @@ def download_spacy_model(model_name):
     Args:
         model_name (str): The name of the spaCy model to download.
     """
-    print("Downloading spaCy model...")
+    # print("Downloading spaCy model...")
     # Suppress output by redirecting to os.devnull
     with open(os.devnull, 'w') as fnull:
         subprocess.run(
@@ -586,16 +1058,41 @@ def download_spacy_model(model_name):
 
 
 def get_api_key(token_name):
+    """
+    Retrieves an API key from environment variables or Kaggle Secrets.
+
+    Args:
+        token_name (str): The name of the token or API key to retrieve.
+
+    Returns:
+        str or None: The API key retrieved from environment variables or Kaggle Secrets,
+                     or None if the key could not be found.
+    """
     api_key = os.environ.get(token_name)
     if api_key is None:
         print(f"Couldn't find {token_name} in environment variables")
         print(f"Reading {token_name} from Kaggle Secrets...")
-        from kaggle_secrets import UserSecretsClient
+        # from kaggle_secrets import UserSecretsClient
+        UserSecretsClient = import_module("kaggle_secrets", "UserSecretsClient")
         user_secrets = UserSecretsClient()
         api_key = user_secrets.get_secret(token_name)
     return api_key
         
-        
+
+def get_filepath_without_extension(filepath):
+    """
+    Get the file path without the file extension.
+
+    Args:
+        filepath (str): The full file path.
+
+    Returns:
+        str: The file path without the extension.
+    """
+    root, _ = os.path.splitext(filepath)
+    return root
+
+
 def get_language_full_name(short_code):
     """
     Get the full name of a language from its short code.
@@ -605,7 +1102,12 @@ def get_language_full_name(short_code):
         
     Returns:
         str: The full name of the language, or None if not found.
+        
+    Raises:
+        LookupError: If the language short code is not recognized.
     """
+    langcodes = import_module("langcodes")
+    
     try:
         language = langcodes.Language.get(short_code)
         return language.display_name()
@@ -618,7 +1120,10 @@ def get_random_temp_filename(suffix=""):
     Generates a random temporary filename without creating the file.
     
     Returns:
-    str: The generated temporary filename.
+        str: The generated temporary filename.
+        
+    Raises:
+        Exception: If an error occurs during filename generation.
     """
     try:
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as temp_file:
@@ -630,18 +1135,39 @@ def get_random_temp_filename(suffix=""):
         return None
     
     
-def import_module(module_name, attribute_name=None, alias=None):
+def import_module(module_name, attribute_name=None, alias=None, install_module=True):
+    """
+    Imports a Python module dynamically, optionally importing specific attributes or using an alias.
+    If the module is not found, it will be installed if requested.
+
+    Args:
+        module_name (str): The name of the module to import.
+        attribute_name (str, optional): The name of the specific attribute to import from the module.
+        alias (str, optional): An alias to assign to the imported module or attribute.
+        install (bool, optional): Whether to install the module if it couldn't be imported.
+
+    Returns:
+        module or object: The imported module or attribute, or None if the module couldn't be imported.
+        
+    Raises:
+        ImportError: If the module couldn't be imported.
+    """
     try:
         module = import_with_importlib(module_name, attribute_name, alias)
-    except ImportError:
-        print(f"{module_name} module not found. Installing...")
-        install(module_name)
-        module = import_with_importlib(module_name, attribute_name, alias)
+    except ImportError as e:
+        if install_module:
+            print(f"{module_name} module not found. Installing...")
+            install(module_name)
+            module = import_with_importlib(module_name, attribute_name, alias)
+        else:
+            # TODO: test raising this error
+            raise ImportError(e)
     return module
     
 
 def import_with_importlib(module_name, attribute_name=None, alias=None):
-    """Dynamically import a module or an attribute from a module using importlib.
+    """
+    Dynamically import a module or an attribute from a module using importlib.
     
     Args:
         module_name (str): The name of the module to import.
@@ -663,13 +1189,82 @@ def import_with_importlib(module_name, attribute_name=None, alias=None):
 
 
 def install(package):
-    """Install a package using pip."""
+    """
+    Installs a Python package using pip.
+
+    Args:
+        package (str): The name of the package to install.
+    """
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     print("\n")
 
+
+def is_package_installed(package_name):
+    """
+    Check if a package is installed without actualy importing it, 
+    which is more memory-efficient.
+
+    Args:
+        package_name (str): The name of the package to check.
+
+    Returns:
+        bool: True if the package is installed, False otherwise.
+    """
+    # Known aliases for certain packages
+    package_aliases = {
+        'pycld3': 'cld3',
+        'pyicu': 'icu',
+    }
     
+    # Use alias if available
+    if package_name in package_aliases:
+        package_name = package_aliases[package_name]
+    
+    # First, try to find the spec of the package
+    package_spec = importlib.util.find_spec(package_name)
+    if package_spec is not None:
+        return True
+
+    # If spec is None, try to import the package
+    try:
+        __import__(package_name)
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
+def move_file(source_path, destination_path):
+    """
+    Moves a file from source_path to destination_path.
+    
+    Args:
+        source_path (str): The path to the source file.
+        destination_filename (str): The path to the file at the destination.
+    
+    Returns:
+        str: The path to the moved file.
+    """
+    # Ensure the destination directory exists
+    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    
+    # Move the file
+    shutil.move(source_path, destination_path)
+    
+    return destination_path
+
+
+# TODO: not used
 def read_csv(filename):
-    """Reads the CSV file and returns a list of dictionaries."""
+    """
+    Reads data from a CSV file and returns it as a list of dictionaries.
+
+    Args:
+        filename (str): The path to the CSV file.
+
+    Returns:
+        list: A list of dictionaries representing rows from the CSV file.
+              An empty list is returned if the file does not exist.
+    """
     if not os.path.exists(filename):
         return []
     
@@ -695,33 +1290,19 @@ def remove_punctuation(text):
     return text.translate(translator)
 
 
-def move_file(source_path, destination_dir, destination_filename):
-    """
-    Moves a file from source_path to destination_dir with a new name destination_filename.
-    
-    Parameters:
-    source_path (str): The path to the source file.
-    destination_dir (str): The path to the destination directory.
-    destination_filename (str): The new name for the file at the destination.
-    
-    Returns:
-    str: The path to the moved file.
-    """
-    # Ensure the destination directory exists
-    os.makedirs(destination_dir, exist_ok=True)
-    
-    # Destination path including the new file name
-    destination_path = os.path.join(destination_dir, destination_filename)
-    
-    # Move the file
-    shutil.move(source_path, destination_path)
-    
-    return destination_path
-
-
 def rename_file(file_path, new_file_name):
-    # Get the directory and original file name
-    directory, original_file_name = os.path.split(file_path)
+    """
+    Renames a file given its current path and new file name.
+
+    Args:
+        file_path (str): The current path of the file.
+        new_file_name (str): The new name to assign to the file.
+
+    Returns:
+        str: The new file path after renaming.
+    """
+    # Get the directory
+    directory, _ = os.path.split(file_path)
     
     # Create the full path for the new file
     new_file_path = os.path.join(directory, new_file_name)
@@ -733,344 +1314,124 @@ def rename_file(file_path, new_file_name):
     return new_file_path
 
 
+# TODO: not used
+def save_updated_csv(file_path, rows):
+    """
+    Saves the updated rows back to the CSV file.
+    
+    Args:
+        file_path (str): The path to the CSV file.
+        rows (list): The list of all rows to be saved.
+        
+    Raises:
+        IOError: If an error occurs while writing to the CSV file.
+    """
+    try:
+        with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = rows[0].keys()
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+    except IOError as e:
+        raise IOError(f"An error occurred while writing to the file: {e}")
+        
+        
+def search_csv_rows(index, search_word):
+    """
+    Searches for a word in the index.
+    
+    Args:
+        index (dict): The index built from the CSV file.
+        search_word (str): The word to search for.
+    
+    Returns:
+        list:
+    """
+    # Return row indices where the word was found
+    return index.get(search_word, [])
+
+
+def verify_and_install_packages(packages):
+    for pkg in packages:
+        if not is_package_installed(pkg):
+            install(pkg)
+            
+            
+# TODO: not used
 def write_csv(filename, data, fieldnames):
-    """Writes the data to a CSV file."""
+    """
+    Writes data to a CSV file.
+
+    Args:
+        filename (str): The path to the CSV file.
+        data (list of dict): The data to write, where each dictionary represents a row.
+        fieldnames (list of str): The field names to use in the CSV header.
+    """
     with open(filename, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
 
 
-class VocabAugmentor:
-    
-    def __init__(self):
-        self.pd = None  # pandas
-        self.pinyin = None
-        self.pseg = None  # For segmentation of Chinese text
-        self.spacy = None  # For segmentation of non-Chinese text
-    
-    def _convert_to_pinyin(self, word):
-        """
-        Convert a Chinese word to its pinyin representation.
+###########################################
+# Functions and Classes for Argument Parser
+###########################################
+def get_default_message(default_value):
+    """
+    Generate a formatted default message.
 
-        Args:
-            word (str): The Chinese word to convert.
+    This function returns a default message formatted with the given default value
+    in green color.
 
-        Returns:
-            str: The pinyin representation of the word.
-        """
-        if self.pinyin is None:
-            # from pypinyin import pinyin
-            self.pinyin = import_module("pypinyin", "pinyin")
-        pinyin_list = self.pinyin(word)
-        return ' '.join([syllable[0] for syllable in pinyin_list])
-    
-    def _is_language_supported_by_tts(self, lang):
-        melotts_supported_languages = ['EN', 'ES', 'FR', 'ZH', 'JP', 'KR']
-        facebook_tts = ['PT']
-        all_supported_languages = melotts_supported_languages + facebook_tts
-        if lang.upper() in all_supported_languages:
-            return True
-        else:
-            print(f"The language '{lang}' is not supported by none of the TTS")
-            print(f"These are the supported languages: {all_supported_languages}")
-            return False
+    Args:
+        default_value (str): The default value to be included in the message.
 
-    def _load_spacy_model(self, model_name):
-        """
-        Load a spaCy model.
-
-        Args:
-            model_name (str): The name of the spaCy model to load.
-
-        Returns:
-            spacy.lang: The loaded spaCy model, or 1 if an error occurs.
-        """
-        try:
-            print("Loading spaCy model...")
-            nlp = self.spacy.load(model_name)
-        except OSError:
-            return 1
-        return nlp
-    
-    def _segment_text(self, text, lang):
-        """
-        Segment text into individual words and their parts of speech.
-
-        Args:
-            text (str): The text to segment.
-            lang (str): The language of the text.
-
-        Returns:
-            list: A list of tuples containing segmented words and their parts of speech.
-        """
-        if lang == 'zh':
-            if self.pseg is None:
-                # import jieba
-                jieba = import_module("jieba")
-                # import jieba.posseg as pseg
-                self.pseg = import_with_importlib("jieba.posseg", alias="pseg")
-            words = self.pseg.lcut(text)
-            return list(words)  # Keeping order by using list instead of set
-        else:
-            spacy_model_name = f'{lang}_core_web_sm'
-            if self.spacy is None:
-                # import spacy
-                self.spacy = import_module("spacy")
-            nlp = self._load_spacy_model(spacy_model_name)
-            if nlp == 1:
-                print(f"spaCy model '{spacy_model_name}' not found. Trying to download it.")
-                download_spacy_model(spacy_model_name)
-                nlp = self._load_spacy_model(spacy_model_name)
-                if nlp == 1:
-                    print(f"spaCy model '{spacy_model_name}' not found. Trying to "
-                          f"load another model: '{lang}_core_news_sm'")
-                    spacy_model_name = f'{lang}_core_news_sm'
-                    nlp = self._load_spacy_model(spacy_model_name)
-                    if nlp == 1:
-                        print(f"spaCy model '{spacy_model_name}' not found. Trying to download it.")
-                        download_spacy_model(spacy_model_name)
-                        nlp = self._load_spacy_model(spacy_model_name)
-                        if nlp == 1:
-                            raise ValueError(f"Unsupported language: {lang}")
-            print("")
-
-            doc = nlp(text)
-            return [(token.text, token.pos_) for token in doc]
-
-    def translate(self, src_text, target_lang, transl_model_name="Helsinki-NLP/opus-mt", gen_model_name="gemini-pro", 
-                  lang_detector="polyglot", vocab_csv_file=None, add_pos=False, add_sentences=False, 
-                  add_audio_text=False, add_audio_words=False):
-        """
-        Translate text from a source language to a target language using a specified model.
-
-        Args:
-            src_text (str): The source text to translate.
-            target_lang (str): The target language code (e.g., 'zh' for Chinese).
-            transl_model_name (str): The name of the translation model to use.
-            gen_model_name (str): The name of the sentence generation model to use.
-            vocab_list (list, optional): ...
-            add_pos (bool, optional): Whether to add parts of speech to the output. Defaults to False.
-            add_sentences (bool, optional): Whether to add sentences in the source language. Defaults to False.
-            add_audio (bool, optional): ...
-
-        Raises:
-            ValueError: If the source and target languages are the same or if an unsupported model is provided.
-
-        Returns:
-            
-        """
-        src_lang = detect_language(src_text, lang_detector="polyglot")
-        if src_lang is None:
-            return 1
-        # TODO: explain why, you can have zh-... and zh-...
-        if src_lang.startswith("zh"):
-            src_lang = "zh"
-        if src_lang == target_lang:
-            raise ValueError("Source and target languages must be different!")
-            
-        src_lang_fullname = get_language_full_name(src_lang)
-        target_lang_fullname = get_language_full_name(target_lang)
-        
-        if add_audio_words or add_audio_text:
-            if self._is_language_supported_by_tts(src_lang):
-                if src_lang == "pt":
-                    tts_model = FacebookTTS("facebook/mms-tts-por")
-                else:
-                    tts_model = MeloTTS()
-            else:
-                add_audio_words = False
-                add_audio_text = False
-            if add_audio_words:
-                # Create the audio directory for words
-                words_audio_dir = f"/kaggle/working/audio/{src_lang_fullname.lower()}/words"
-                os.makedirs(words_audio_dir, exist_ok=True)
-            if add_audio_text:
-                # Create the audio directory for text
-                text_audio_dir = f"/kaggle/working/audio/{src_lang_fullname.lower()}/text"
-                os.makedirs(text_audio_dir, exist_ok=True)
-
-        if transl_model_name == "Helsinki-NLP/opus-mt":
-            transl_model = HelsinkiNLP(src_lang, target_lang)
-        elif transl_model_name == "facebook/mbart-large-50-many-to-many-mmt":
-            transl_model = MBart(src_lang, target_lang)
-        elif transl_model_name == "gemini-pro":
-            transl_model = GeminiPro(src_lang, target_lang)
-        elif transl_model_name == "meta-llama/Meta-Llama-3-8B-Instruct":
-            transl_model = Llama3(src_lang, target_lang)
-        else:
-            raise ValueError(f"Unsupported translatation model: {transl_model_name}")
-            
-        if add_sentences:
-            if gen_model_name == "gemini-pro":
-                if transl_model_name == "gemini-pro":
-                    gen_model = transl_model
-                else:
-                    gen_model = GeminiPro(src_lang, target_lang)
-            elif gen_model_name == "meta-llama/Meta-Llama-3-8B-Instruct":
-                if transl_model_name == "meta-llama/Meta-Llama-3-8B-Instruct":
-                    gen_model = transl_model
-                else:
-                    gen_model = Llama3(src_lang, target_lang)
-            else:
-                raise ValueError(f"Unsupported sentence generation model: {gen_model_name}")
-
-        if src_lang == "zh":
-            src_text_pinyin = self._convert_to_pinyin(src_text)
-        else:
-            src_text_pinyin = ""
-                
-        # Translate the entire text to get context-aware translation
-        full_translation = transl_model.translate_text(src_text)
-        if target_lang == "zh":
-            full_translation_pinyin = self._convert_to_pinyin(full_translation)
-        else:
-            full_translation_pinyin = ""
-            
-        # Remove punctuation from the source text
-        # TODO: copy src_text and save it in txt file (content) when adding text audio
-        src_text = remove_punctuation(src_text)
-
-        # Segment the source text into words with their parts of speech
-        words = self._segment_text(src_text, src_lang)
-
-        # Create a list to store the word details
-        word_details = []
-
-        # Print the vocabulary list with translations and pinyin (if it applies)
-        index = 0
-        sentences_to_print = ""
-        audio_jobs = []
-        chinese_chars_to_pinyin ={}
-        for src_word, flag in words:
-            if src_word in COMMON_PARTICLES:
-                translation = COMMON_PARTICLES[src_word]
-            else:
-                translation = transl_model.translate_text(src_word)
-                if src_lang == 'zh' and translation.lower() == "yes.":
-                    translation = "like"  # Fixing the incorrect translation for "喜欢"
-            pos_full_name = POS_MAP.get(flag, 'unknown')
-            word_detail = {
-                f'{src_lang_fullname} Word': src_word,
-            }
-            word_detail_str = src_word
-            if src_lang == 'zh':
-                pinyin_src_word = chinese_chars_to_pinyin.get(src_word)
-                if pinyin_src_word is None:
-                    pinyin_src_word = self._convert_to_pinyin(src_word)
-                    chinese_chars_to_pinyin.setdefault(src_word, pinyin_src_word)
-                word_detail.update({'Pinyin': pinyin_src_word})
-                word_detail_str += f" ({pinyin_src_word})"
-            if add_audio_words:
-                job = tts_model.generate_speech(text=src_word, lang=src_lang, event_listener="submit")
-                if src_lang == "zh":
-                    pinyin_src_word = chinese_chars_to_pinyin.get(src_word)
-                    if pinyin_src_word is None: 
-                        pinyin_src_word = self._convert_to_pinyin(src_word)
-                        chinese_chars_to_pinyin.setdefault(src_word, pinyin_src_word)
-                    audio_jobs.append((pinyin_src_word, job))
-                else:
-                    audio_jobs.append((src_word, job))
-            word_detail.update({f'{target_lang_fullname} Translation': translation})
-            word_detail_str += f": {translation} "
-            if target_lang == 'zh':
-                pinyin_translated_word = chinese_chars_to_pinyin.get(translation)
-                if pinyin_translated_word is None: 
-                    pinyin_translated_word = self._convert_to_pinyin(translation)
-                    chinese_chars_to_pinyin.setdefault(translation, pinyin_translated_word)
-                word_detail.update({'Pinyin': pinyin_translated_word})
-                word_detail_str += f"({pinyin_translated_word}) "
-            if add_pos:
-                word_detail.update({'Part of Speech': pos_full_name})
-                word_detail_str += f"- {pos_full_name}"
-            if add_sentences:
-                sentences = gen_model.generate_text(words=src_word, nb_sentences=2).strip()
-                #ipdb.set_trace()
-                try:
-                    sent1, transl1, _, sent2, transl2 = sentences.split("\n")
-                except:
-                    ipdb.set_trace()
-                if src_lang == 'zh':
-                    sent_pinyin_transl = f"1. {sent1} ({self._convert_to_pinyin(sent1)}): {transl1}\n2. {sent2} ({self._convert_to_pinyin(sent2)}): {transl2}"
-                    sentences_to_print += f"\n{src_word} ({pinyin_src_word}):\n{sent_pinyin_transl}\n"
-                elif target_lang == 'zh':
-                    sent_pinyin_transl = f"1. {sent1}: {transl1} ({self._convert_to_pinyin(transl1)})\n2. {sent2}: {transl2} ({self._convert_to_pinyin(transl2)})"
-                    sentences_to_print += f"\n{src_word}:\n{sent_pinyin_transl}\n"
-                else:
-                    sent_pinyin_transl = f"1. {sent1}: {transl1}\n2. {sent2}: {transl2}"
-                    sentences_to_print += f"\n{src_word.capitalize()}:\n{sent_pinyin_transl}\n"
-                word_detail.update({'Examples of sentences': sent_pinyin_transl})
-            word_details.append(word_detail)
-            if index == 0:
-                print(f"\nTranslation Model: {transl_model_name}")
-                print(f"Source language: {src_lang_fullname}")
-                print(f"Target language: {target_lang_fullname}")
-                if src_lang == "zh":
-                    print(f"\nSource Text: {src_text} ({src_text_pinyin})")
-                else:
-                    print(f"\nSource Text: {src_text}")
-                if target_lang == "zh":
-                    print(f"Full Translation: {full_translation} ({full_translation_pinyin})\n")
-                else:
-                    print(f"Full Translation: {full_translation}\n")
-            index+=1
-            print(word_detail_str)
-        
-        if add_sentences:
-            print(f"\n\nExamples of sentences:")
-            print(sentences_to_print)
-
-        # Create a DataFrame from the word details
-        if vocab_csv_file:
-            # TODO: add translation model name, tts model name, date created, date updated
-            if self.pd is None:
-                # import pandas as pd
-                self.pd = import_module("pandas", alias="pd")
-            df = sef.pd.DataFrame(word_details)
-            # Save the DataFrame to a CSV file
-            filename = f'{src_lang_fullname.lower()}_words_translation.csv'
-            print(f"\nSaving csv file: {filename}")
-            df.to_csv(f'{filename}', index=False, encoding='utf-8-sig')
-
-        print("")
-        if add_audio_text:
-            source_path = tts_model.generate_speech(text=src_text, lang=src_lang, event_listener="predict")
-            if src_lang == "zh":
-                filename = src_text_pinyin[:100].strip()
-                content = src_text + "\n\n" + src_text_pinyin
-            else:
-                filename = src_text[:100].strip()
-                content = src_text
-            text_path = create_text_file(content, os.path.join(text_audio_dir, filename + ".txt"))
-            audio_path = move_file(source_path, text_audio_dir, filename + ".wav")
-            print(f"Text file: {text_path}")
-            print(f"Audio file: {audio_path}")
-        
-        if add_audio_words:
-            for word, job in audio_jobs:
-                if type(job) == str:
-                    source_path = job
-                else:
-                    source_path = job.result()
-                # ipdb.set_trace()
-                moved_file_path = move_file(source_path, words_audio_dir, word +".wav")
-                print(f"File moved to {moved_file_path}")
-        return 0
+    Returns:
+        str: The formatted default message.
+    """
+    return green(f' (default: {default_value})')
 
 
 class ArgumentParser(argparse.ArgumentParser):
+    """
+    A custom ArgumentParser to provide a custom error message format.
+
+    This class overrides the default error method to print the usage message
+    and a custom error message in red color when an error occurs.
+    """
 
     def error(self, message):
+        """
+        Handle an error in argument parsing.
+
+        This method prints the usage message and a custom error message in red color,
+        then exits the program with status code 2.
+
+        Args:
+            message (str): The error message to be displayed.
+        """
         print(self.format_usage().splitlines()[0])
         self.exit(2, red(f'\nerror: {message}\n'))
 
 
 class MyFormatter(argparse.HelpFormatter):
     """
-    Corrected _max_action_length for the indenting of subactions
+    A custom HelpFormatter to correct the maximum action length for the indenting of subactions.
+
+    This formatter adjusts the maximum action length to account for the additional indentation
+    of subactions, ensuring that help messages are properly aligned.
     """
 
     def add_argument(self, action):
+        """
+        Add an argument to the parser, adjusting the maximum action length for subactions.
+
+        This method overrides the default add_argument method to account for the additional
+        indentation of subactions, ensuring that the help messages are properly aligned.
+
+        Args:
+            action (argparse.Action): The argument action to be added.
+        """
         if action.help is not argparse.SUPPRESS:
 
             # find all invocations
@@ -1095,6 +1456,18 @@ class MyFormatter(argparse.HelpFormatter):
 
     # Ref.: https://stackoverflow.com/a/23941599/14664104
     def _format_action_invocation(self, action):
+        """
+        Format the action invocation string.
+
+        This method formats the invocation string for an action, taking into account whether
+        the action has option strings and whether it takes a value.
+
+        Args:
+            action (argparse.Action): The argument action to be formatted.
+
+        Returns:
+            str: The formatted action invocation string.
+        """
         if not action.option_strings:
             metavar, = self._metavar_formatter(action, action.dest)(1)
             return metavar
@@ -1121,6 +1494,21 @@ class MyFormatter(argparse.HelpFormatter):
         
 # Ref.: https://stackoverflow.com/a/4195302/14664104
 def required_length(nmin, nmax, is_list=True):
+    """
+    Define a custom argparse action to enforce the number of arguments.
+
+    This function creates and returns a custom argparse action that enforces
+    the requirement that a specific number of arguments are provided. If the
+    number of arguments is not within the specified range, an error is raised.
+
+    Args:
+        nmin (int): The minimum number of arguments required.
+        nmax (int): The maximum number of arguments allowed.
+        is_list (bool): A flag indicating whether the input should be treated as a list.
+
+    Returns:
+        argparse.Action: A custom argparse action enforcing the specified argument length.
+    """
     class RequiredLength(argparse.Action):
         def __call__(self, parser, args, values, option_string=None):
             if isinstance(values, str):
@@ -1140,14 +1528,23 @@ def required_length(nmin, nmax, is_list=True):
         
         
 def setup_argparser():
-    name_input = 'csv_file'
+    """
+    Set up the argument parser for the vocabulary expansion tool.
+
+    This function configures the argument parser to handle command-line arguments
+    for processing, translating, and managing vocabulary from the provided text.
+
+    Returns:
+        ArgumentParser: Configured argument parser with the required options.
+    """
     try:
         width = os.get_terminal_size().columns - 5
-        usage_msg = f'%(prog)s [OPTIONS] {{{name_input}}}'
+        usage_msg = '%(prog)s '
     except OSError:
         # No access to terminal
         width = 110
-        usage_msg = f'vocab [OPTIONS] {{{name_input}}}'
+        usage_msg = 'vocab '
+    usage_msg += '[OPTIONS] {TEXT} {TGT_LANG}'
     desc_msg = 'Expand your vocabulary list by identifying and translating new words from provided text using various language models.'
     parser = ArgumentParser(
         description="",
@@ -1159,68 +1556,1069 @@ def setup_argparser():
         '-h', '--help', action='help',
         help='Display detailed usage instructions and exit the program.')
     parser.add_argument(
-        name_input, nargs='*', action=required_length(0, 1),
-        help='Path to the vocabulary CSV file. If the file does not exist, a new one will be created.')
-    parser.add_argument(
-        '-t', '--text', type=str, required=True, 
+        '-t', '--text', metavar='TEXT', type=str, required=True, 
         help='The source text that will be processed to identify and translate new words.')
     parser.add_argument(
-        '-l', '--target_lang', metavar='LANG_CODE', type=str, required=True, 
+        '-l', '--target_lang', metavar='TGT_LANG', type=str, required=True, 
         help='''Target language code into which the source text will be translated (e.g., zh for Chinese, en for English,
              pt for Portuguese).''')
     parser.add_argument(
-        '-m', '--transl_model', metavar='NAME', type=str, default=Transl_Model, 
-        choices=['helsinki', 'mbart', 'gemini', 'llama'],
-        help='Translation model to use for translating the text.'
-             + get_default_message(Transl_Model))
+        '-o', '--text_origin', metavar='ORIGIN', type=str, 
+        help='Origin of the source text, e.g. movie script, book, URL of website, etc.')
     parser.add_argument(
-        '-d', '--lang_detector', metavar='NAME', type=str, default=Lang_Detector, 
-        choices=['langdetect', 'langid', 'polyglot'],
+        '-d', '--lang_detector', metavar='NAME', type=str, default=LANG_DETECTOR, 
+        choices=LANG_DETECTORS,
         help='Method to use for detecting the language of the source text.' 
-             + get_default_message(Lang_Detector))
+             + get_default_message(LANG_DETECTOR))
     parser.add_argument(
-        '-g', '--gen_model', metavar='NAME', type=str, default=Gen_Model,
-        choices=['gemini', 'llama'],
+        '-m', '--transl_model', metavar='NAME', type=str, default=TRANSL_MODEL, 
+        choices=list(TRANSL_MODEL_MAP.keys()),
+        help='Translation model to use for translating the text.'
+             + get_default_message(TRANSL_MODEL))
+    parser.add_argument(
+        '-g', '--gen_model', metavar='NAME', type=str, default=GEN_MODEL,
+        choices=list(GEN_MODEL_MAP.keys()),
         help='Language model to use for generating example sentences in the source language.'
-             + get_default_message(Gen_Model))
+             + get_default_message(GEN_MODEL))
     parser.add_argument(
-        '--as', '--add_sentences',  dest='add_sentences', action='store_true', 
-        help='Flag to add or update example sentences in the vocabulary list.')
+        '-c', '--csv_filepath', metavar='CSV_FILE', type=str,
+        help='Path to the vocabulary CSV file. If the file does not exist, a new one will be created.')
+    parser.add_argument(
+        '-a', '--audio_dirpath', metavar='AUDIO_DIR', type=str,
+        help='Path to the main directory for storing audio files.' + get_default_message(AUDIO_MAIN_DIRPATH))
+    parser.add_argument(
+        '-b', '--audio_base_url', metavar='URL', type=str,
+        help='Base URL to audio files of words. (experimental)')
     parser.add_argument(
         '--ap', '--add_pos', dest='add_pos', action='store_true', 
         help='Flag to add or update part-of-speech (POS) information for the words.')
+    parser.add_argument(
+        '--as', '--add_sentences',  dest='add_sentences', action='store_true', 
+        help='Flag to add or update example sentences in the vocabulary list.')
     parser.add_argument(
         '--aut', '--add_audio_text', dest='add_audio_text', action='store_true', 
         help='Flag to add or update audio pronunciation for the source text.')
     parser.add_argument(
         '--aaw', '--add_audio_words', dest='add_audio_words', action='store_true', 
         help='Flag to add or update audio pronunciation for the extracted words from the text.')     
+    parser.add_argument(
+        '--ascb', '--add_save_comments_button', dest='add_save_comments_button', action='store_true', 
+        help="Flag to add 'Save Comments' button in the HTML page of the table. (experimental)") 
     return parser
 
 
+############
+# Main Class
+############
+class VocabAugmentor:
+    """
+    A class used to augment vocabulary with various functionalities including
+    translation, text-to-speech, and text segmentation.
+
+    Attributes
+    ----------
+    pd : module
+        Pandas module for data manipulation.
+    pinyin : module
+        Module for converting Chinese characters to pinyin.
+    pseg : module
+        Module for segmentation of Chinese text.
+    spacy : module
+        Module for segmentation of non-Chinese text.
+    transl_model_name : str
+        Name of the translation model.
+    transl_model : object
+        Translation model object.
+    gen_model_name : str
+        Name of the generation model.
+    gen_model : object
+        Generation model object.
+    tts_model_name : str
+        Name of the text-to-speech model.
+    tts_model : object
+        Text-to-speech model object.
+    lang_detector : str
+        Name of language detector method.
+    audio_main_dirpath : str
+        Path to the main directory for storing audio files.
+    audio_text_dirpath : str
+        Directory for storing audio of text.
+    audio_text_filepath : str
+        File path for the audio of text.
+    audio_text_content_filepath : str
+        File path for the content of the text to be converted to audio.
+    audio_text_content : str
+        Content of the text to be converted to audio.
+    audio_base_url : str
+        Base URL for links to audio files of words. (experimental)
+    audio_words_dirpath : str
+        Directory for storing audio of words.
+    vocab_csv_filepath : str
+        Path to the vocabulary CSV file.
+    add_pos : bool
+        Flag indicating whether to add part-of-speech tags.
+    add_sentences : bool
+        Flag indicating whether to add sentences.
+    add_audio_text : bool
+        Flag indicating whether to add audio for the text.
+    add_audio_words : bool
+        Flag indicating whether to add audio for individual words.
+    add_save_comments_button: bool
+        Flag indicating whether to add the 'Save Comments' button in the HTML page of the table. (experimental)
+    src_text : str
+        Source text.
+    src_text_no_punct : str
+        Source text without punctuation.
+    src_text_pinyin : str
+        Pinyin representation of the source text.
+    src_text_origin : str
+        Origin of the source text.
+    full_translation : str
+        Full translation of the source text.
+    full_translation_pinyin : str
+        Pinyin representation of the full translation.
+    src_lang : str
+        Source language code.
+    src_lang_fullname : str
+        Full name of the source language.
+    target_lang : str
+        Target language code.
+    target_lang_fullname : str
+        Full name of the target language.
+    audio_jobs : list
+        List of audio jobs.
+    chinese_chars_to_pinyin : dict
+        Dictionary mapping Chinese characters to pinyin.
+    """
+    
+    def __init__(self):
+        """
+        Initializes the VocabAugmentor object with default values for its attributes.
+        """
+        ## Modules
+        self.pd = None  # pandas
+        self.pinyin = None
+        self.pseg = None  # For segmentation of Chinese text
+        self.spacy = None  # For segmentation of non-Chinese text
+        
+        ## Models
+        self.transl_model_name = ""
+        self.transl_model = None
+        self.gen_model_name = ""
+        self.gen_model = None
+        self.tts_model_name = ""
+        self.tts_model = None
+        self.lang_detector = ""
+        
+        ## Directories and files
+        self.audio_main_dirpath = ""
+        self.audio_text_dirpath = ""
+        self.audio_text_filepath = ""
+        self.audio_text_content = ""
+        self.audio_text_content_filepath = ""
+        self.audio_words_dirpath = ""
+        self.vocab_csv_filepath = ""
+        self.audio_base_url = ""  # (experimental)
+        
+        ## Flags
+        self.add_pos = False
+        self.add_sentences = False
+        self.add_audio_text = False
+        self.add_audio_words = False
+        self.add_save_comments_button = False  # (experimental)
+        
+        ## Source text and its translation
+        self.src_text = ""
+        self.src_text_no_punct = ""
+        self.src_text_pinyin = ""
+        self.src_text_origin = ""
+        self.full_translation = ""
+        self.full_translation_pinyin = ""
+        self.src_lang = ""
+        self.src_lang_fullname = ""
+        self.target_lang = ""
+        self.target_lang_fullname = ""
+        
+        # List and dict
+        self.audio_jobs = []
+        self.chinese_chars_to_pinyin ={}
+    
+    def _convert_to_pinyin(self, word):
+        """
+        Convert a Chinese word to its pinyin representation.
+
+        Args:
+            word (str): The Chinese word to convert.
+
+        Returns:
+            str: The pinyin representation of the word.
+        """
+        # Import/install pypinyin module
+        if self.pinyin is None:
+            # from pypinyin import pinyin
+            self.pinyin = import_module("pypinyin", "pinyin")
+        pinyin_word = self.chinese_chars_to_pinyin.get(word)
+        if pinyin_word is None: 
+            # Compute Pinyin for the word
+            pinyin_list = self.pinyin(word)
+            pinyin_word = ' '.join([syllable[0] for syllable in pinyin_list])
+            # Save the computed Pinyin for later lookup
+            self.chinese_chars_to_pinyin.setdefault(word, pinyin_word)    
+        return pinyin_word
+    
+    @staticmethod
+    def _is_language_supported_by_tts(lang):
+        """
+        Check if a language is supported by the text-to-speech (TTS) models.
+
+        Args:
+            lang (str): Language code to check.
+
+        Returns:
+            bool: True if the language is supported, False otherwise.
+        """
+        melotts_lang = ['EN', 'ES', 'FR', 'ZH', 'JP', 'KR']
+        facebooktts_lang = ['PT']
+        all_supported_languages = melotts_lang + facebooktts_lang
+        if lang.upper() in all_supported_languages:
+            return True
+        else:
+            print(f"The language '{lang}' is not supported by none of the TTS")
+            print(f"These are the supported languages: {all_supported_languages}")
+            return False
+
+    def _load_spacy_model(self, model_name):
+        """
+        Load a spaCy model.
+
+        Args:
+            model_name (str): The name of the spaCy model to load.
+
+        Returns:
+            spacy.lang: The loaded spaCy model, or 1 if an error occurs.
+        """
+        try:
+            nlp = self.spacy.load(model_name)
+        except OSError:
+            return 1
+        return nlp
+    
+    def _load_gen_model(self):
+        """
+        Load the sentence generation model.
+        
+        Returns:
+            None
+        """
+        # Check if there is already a loaded sentence generation model that matches the chosen configuration
+        if self.gen_model and self.gen_model.model_name == self.gen_model_name and \
+            self.gen_model.src_lang == self.src_lang and self.gen_model.target_lang == self.target_lang:
+            pass
+        elif self.add_sentences:
+            if self.gen_model_name == "gemini-pro":
+                if self.transl_model_name == "gemini-pro":
+                    self.gen_model = self.transl_model
+                else:
+                    self.gen_model = GeminiPro(self.src_lang, self.target_lang)
+            elif self.gen_model_name == "meta-llama/Meta-Llama-3-8B-Instruct":
+                if self.transl_model_name == "meta-llama/Meta-Llama-3-8B-Instruct":
+                    self.gen_model = self.transl_model
+                else:
+                    self.gen_model = Llama3(self.src_lang, self.target_lang)
+            else:
+                raise ValueError(f"Unsupported sentence generation model: {self.gen_model_name}")
+        else:
+            self.gen_model = None
+            self.gen_model_name = ""
+            
+    def _load_transl_model(self):
+        """
+        Load the translation model.
+        
+        Returns:
+            None
+        """
+        # Check if there is already a loaded translation model that matches the chosen configuration
+        if self.transl_model and self.transl_model.model_name == self.transl_model_name and \
+            self.transl_model.src_lang == self.src_lang and self.transl_model.target_lang == self.target_lang:
+            pass
+        elif self.transl_model_name == "Helsinki-NLP/opus-mt":
+            self.transl_model = HelsinkiNLP(self.src_lang, self.target_lang)
+        elif self.transl_model_name == "facebook/mbart-large-50-many-to-many-mmt":
+            self.transl_model = MBart(self.src_lang, self.target_lang)
+        elif self.transl_model_name == "gemini-pro":
+            self.transl_model = GeminiPro(self.src_lang, self.target_lang)
+        elif self.transl_model_name == "meta-llama/Meta-Llama-3-8B-Instruct":
+            self.transl_model = Llama3(self.src_lang, self.target_lang)
+        else:
+            raise ValueError(f"Unsupported translatation model: {self.transl_model_name}")
+    
+    def _load_TTS_model(self):
+        """
+        Load the text-to-speech (TTS) model and create audio directories if needed.
+
+        Sets flags to disable audio generation if the source language is not supported.
+        
+        Returns:
+            None
+        """
+        if self.add_audio_text or self.add_audio_words:
+            # Check if the source language is supported by one of the TTS model
+            if self._is_language_supported_by_tts(self.src_lang):
+                ## Load TTS model
+                if self.src_lang == "pt":
+                    # Check first if there is already a loaded TTS model
+                    if self.tts_model and self.tts_model.model_name == "facebook/mms-tts-por":
+                        pass
+                    else:
+                        # Portuguese supported by Facebook-TTS (not MeloTTS)
+                        self.tts_model = FacebookTTS("facebook/mms-tts-por")
+                else:
+                    # Check first if there is already a loaded TTS model
+                    if self.tts_model and self.tts_model.model_name == "MeloTTS":
+                        pass
+                    else:
+                        self.tts_model = MeloTTS()
+                self.tts_model_name = self.tts_model.model_name
+            else:
+                # Source language not supported, thus audio generation disabled completely
+                self.add_audio_words = False
+                self.add_audio_text = False
+                
+            # Creation of audio directories
+            if self.add_audio_text:
+                # Create the audio directory for text sounds
+                self.audio_text_dirpath = os.path.join(self.audio_main_dirpath, f"{self.src_lang_fullname.lower()}/text")
+                os.makedirs(self.audio_text_dirpath, exist_ok=True)
+            if self.add_audio_words:
+                # Create the audio directory for word sounds
+                self.audio_words_dirpath = os.path.join(self.audio_main_dirpath, f"{self.src_lang_fullname.lower()}/words")
+                os.makedirs(self.audio_words_dirpath, exist_ok=True)
+    
+    def _print_entry(self, entry):
+        """
+        Print the information of a given vocabulary entry.
+
+        Args:
+            entry (dict): A dictionary containing the details of a vocabulary entry.
+            
+        Returns:
+            None
+        """
+        # String containing all info (e.g. Pinyin, POS, Dates, ...) for a given source word to be printed
+        print_str = ""
+        
+        # Print first the source word and its Pinyin (if applicable)
+        print_str += blue(f"{entry['Word']}")
+        if self.src_lang == 'zh':
+            print_str += f" ({entry['Pinyin (Word)']}): "
+        else:
+            print_str += f": "
+            
+        # Print the translated word and its Pinyin(if applicable)
+        print_str += f"{entry['Translation']}"
+        if self.target_lang == 'zh':
+            print_str += f" ({entry['Pinyin (Translation)']})"
+        
+        if self.add_pos:
+            print_str += f" - {entry['POS']}"
+            
+        if self.add_sentences:
+            print_str += f"\nExample Sentences:\n{entry['Example Sentences']}\n\n"
+            
+        print(print_str)
+        
+    
+    def _process_audio_text(self):
+        """
+        Generate and process the audio for the source text if needed.
+        
+        Returns:
+            None
+        """
+        # Generate speech for the source text if:
+        # 1. The corresponding flag is enabled
+        #               AND
+        # 2. The audio path doesn't exist
+        if self.add_audio_text:
+            if not os.path.exists(self.audio_text_filepath):
+                # Use source text with punctuations when generating speech
+                source_path = self.tts_model.generate_speech(
+                    text=self.src_text, lang=self.src_lang, event_listener="predict")
+                move_file(source_path, self.audio_text_filepath)
+                # TODO: log following info instead
+                print(f"Audio file (text): {self.audio_text_filepath}")
+            if not os.path.exists(self.audio_text_content_filepath):
+                create_text_file(self.audio_text_content, self.audio_text_content_filepath)
+                print(f"Text file: {self.audio_text_content_filepath}")
+    
+    def _process_audio_words(self):
+        """
+        Generate and process the audio for individual words if needed.
+
+        Moves the generated audio files to the specified directory.
+        
+        Returns:
+            None
+        """
+        if self.add_audio_words:
+            for audio_path, job in self.audio_jobs:
+                # source_path is a temporary path for the audio file
+                # audio_path is the destination path for the audio file
+                if type(job) == str:
+                    source_path = job
+                else:
+                    source_path = job.result()
+                #ipdb.set_trace()
+                if not os.path.exists(audio_path):
+                    move_file(source_path, audio_path)
+                    # TODO: log following info instead
+                    print(f"Audio file (word): {audio_path}")
+                
+    def _process_extracted_words(self, words):
+        """
+        Process extracted words, updating or adding them to the vocabulary list.
+
+        Args:
+            words (list of tuple): A list of tuples where each tuple contains a source word and its POS tag.
+            
+        Returns:
+            csv_rows: TODO
+        """
+        index = 0
+        new_entries = []
+        new_words = []
+        self.audio_jobs = []
+        self.chinese_chars_to_pinyin ={}
+        
+        init_entry_values = {}
+        for k,v in COLUMN_TO_MIN_WIDTH.items():
+            if k == "Date Added":
+                init_entry_values[k] = datetime.now().strftime("%Y-%m-%d")
+            else:
+                init_entry_values[k] = ''
+        
+        # Build an in-memory index for faster subsequent searches where:
+        # - each key is a word from the "Word" column
+        # - each value is a list of rows that contain that word
+        # csv_rows contain all rows in the CSV file
+        csv_index, csv_rows = build_index(self.vocab_csv_filepath)
+        
+        # Each extracted word is associated with a POS tag (e.g. a, ad)
+        for i, (src_word, pos_tag) in enumerate(words):
+            # Check if src_word is a new word but was already processed
+            if src_word in new_words:
+                continue
+                
+            pos_tag = pos_tag.lower()
+            
+            # Search all the CSV row indices for rows that have the `src_word` in the 'Word' column
+            # NOTE: src_word can appear more than once in the csv file, e.g. the user added them manually
+            row_indices = search_csv_rows(csv_index, src_word)
+            
+            # If we are at the beginning of the word processing, print info about source text
+            # Then info about each extracted word can be displayed
+            if i == 0:
+                print(f"\nTranslation Model: {self.transl_model_name}")
+                if self.gen_model_name:
+                    print(f"Sentence Generation Model: {self.gen_model_name}")
+                if self.tts_model_name:
+                    print(f"TTS Model: {self.tts_model_name}")
+                print(f"Source language: {self.src_lang_fullname}")
+                print(f"Target language: {self.target_lang_fullname}")
+                # If the source language is Chinese, print the Pinyin of the source text
+                if self.src_lang == "zh":
+                    print(f"\n{yellow('Source Text:')} {self.src_text} ({self.src_text_pinyin})")
+                else:
+                    print(f"\n{yellow('Source Text:')} {self.src_text}")
+                # If the target language is Chinese, print the Pinyin of the translated source text
+                if self.target_lang == "zh":
+                    print(f"{yellow('Translation:')} {self.full_translation} ({self.full_translation_pinyin})\n")
+                else:
+                    print(f"{yellow('Translation:')} {self.full_translation}\n")
+            
+            # Check if the source word was already part of the vocab list
+            if row_indices:
+                # Update existing word
+                for row_index in row_indices:
+                    # Get the entry (row) associated with a given row index
+                    entry = csv_rows[row_index]
+                    # Update the entry (existing word)
+                    self._process_src_word(src_word, pos_tag, entry)
+            else:
+                # Process new word
+                new_entry = init_entry_values.copy()
+                new_entry['Word'] = src_word
+                # Remove pinyin columns if necessary
+                if self.src_lang != 'zh':
+                    del new_entry['Pinyin (Word)']
+                if self.target_lang != 'zh':
+                    del new_entry['Pinyin (Translation)']
+                    
+                self._process_src_word(src_word, pos_tag, new_entry, is_new_entry=True)
+                
+                # Save new entry and source word
+                new_entries.append(new_entry)
+                new_words.append(src_word)
+         
+        # Save all new entries with the original vocal list
+        csv_rows.extend(new_entries)
+        
+        return csv_rows
+    
+    def _process_src_word(self, src_word, pos_tag, entry, is_new_entry=False):
+        """
+        Process a source word, updating or adding it to the vocabulary list.
+
+        Args:
+            src_word (str): The source word to process.
+            pos_tag (str): The part-of-speech tag for the source word.
+            entry (dict): The vocabulary entry associated with the source word.
+            is_new_entry (bool, optional): Indicates whether the entry is new. Defaults to False.
+            
+        Returns:
+            None
+        """
+        updated = False
+        
+        # Do the translation of the source word only if one of these cases is true:
+        # 1. It is a new entry
+        # 2. The original translation needs to be updated because the current chosen translation model is different
+        if not entry['Translation'] or ((entry['Translation'] and entry['Translation Model'] != self.transl_model_name)):
+            updated = True
+            # Translate the source word
+            if src_word in COMMON_PARTICLES:
+                # The source word is a Chinese particle. Get its translation directly from the map
+                word_translation = COMMON_PARTICLES[src_word]
+            else:
+                word_translation = self.transl_model.translate_text(src_word)
+                if self.src_lang == 'zh' and word_translation.lower() == "yes.":
+                    word_translation = "like"  # Fixing the incorrect translation for "喜欢"
+            # Save new translation
+            entry['Translation'] = word_translation
+            entry['Translation Model'] = self.transl_model_name
+            
+        # Save pinyin for the source word if the following are true:
+        # - The source language is Chinese 
+        # - The entry doesn't already have a pinyin for the source word
+        if self.src_lang == 'zh' and not entry['Pinyin (Word)']:
+            # Get Pinyin for the source word and save it
+            entry['Pinyin (Word)'] = self._convert_to_pinyin(src_word)
+            
+        # Save pinyin for the translated word if following are true:
+        # - The target language is Chinese 
+        # - The entry doesn't already have a pinyin for the translated word
+        if self.target_lang == 'zh':
+            # Get Pinyin for the translated word and save it
+            entry['Pinyin (Translation)'] = self._convert_to_pinyin(word_translation)
+            
+        # Add the origin of the word only if this condition is true:
+        # 1. The corresponding flag is enabled
+        if self.src_text_origin:
+            updated = True
+            entry['Word Origin'] = self.src_text_origin
+            
+        # Get the full name of the POS tag, e.g. a --> adjective, ad --> adverbial
+        # TODO: fix pos full name (e.g. adj not covered)
+        #pos_full_name = POS_MAP.get(pos_tag, 'unknown')
+        # Add the POS only if these conditions are true:
+        # 1. The corresponding flag is enabled
+        # 2. The corresponding entry is empty
+        if self.add_pos and not entry['POS']:
+            entry['POS'] = pos_tag  # pos_full_name
+            
+        # Generate speech for the source word if:
+        # 1 The corresponding flag is enabled
+        #               AND
+        # 2.1 The entry doesn't already have an audio path for the source word 
+        #               OR
+        # 2.2 The audio path doesn't exist
+        if self.add_audio_words and (not entry['Audio (Word)'] or 
+            not os.path.exists(entry['Audio (Word)'])):
+            updated = True
+            # Generate sound pronounciation for the source word as a background job
+            # i.e. 'submit' event listener
+            # TODO important: find another heuristic than `self.src_lang != 'zh'` ...
+            if self.src_lang != 'zh' and len(src_word) == 1:
+                job = self.tts_model.generate_speech(
+                    text=f"{src_word}, {src_word}, {src_word}", lang=self.src_lang, event_listener="submit")
+            else:
+                job = self.tts_model.generate_speech(
+                    text=src_word, lang=self.src_lang, event_listener="submit")
+            
+            # Get the source word or its pinyin
+            if self.src_lang == "zh":
+                # Get Pinyin for the source word
+                pinyin_src_word = self._convert_to_pinyin(src_word)
+                filename = pinyin_src_word
+            else:
+                filename = src_word
+            
+            # Filepath to the audio associated with the source word
+            audio_path = os.path.join(self.audio_words_dirpath, filename +".wav")
+            # Save the source word or its pinyin along with the 'job' for later processing
+            self.audio_jobs.append((audio_path, job))
+            # Save the audio path associated with the source word
+            if self.audio_base_url:
+                audio_words_dirpath = os.path.join(self.audio_base_url, f"{self.src_lang_fullname.lower()}/words")
+                entry['Audio (Word)'] = "file://" + os.path.join(audio_words_dirpath, filename +".wav")
+            else:
+                entry['Audio (Word)'] = "file://" + audio_path
+            entry['TTS Model'] = self.tts_model_name
+            
+        # Generate the example sentences only if one of these cases is true:
+        # 1. The corresponding flag is enabled
+        # 1. It is a new entry
+        # 2. The original example sentences need to be updated because the current chosen generation model is different
+        if self.add_sentences and (not entry['Example Sentences'] or (entry['Example Sentences'] and entry['Sentence Generation Model'] != self.gen_model_name)):
+            updated = True
+            sentences = self.gen_model.generate_text(words=src_word, nb_sentences=2).strip()
+            
+            # Save the sentence generation model
+            entry['Example Sentences'] = sentences
+            entry['Sentence Generation Model'] = self.gen_model_name
+        
+        # Add updated date only if it is not a new entry and an entry's value was updated
+        if updated and not is_new_entry:
+            entry['Date Updated'] = datetime.now().strftime("%Y-%m-%d")
+        
+        # Print info about the given source word including translation and pinyin (if it applies)
+        # Only if it is a new word in the vocab list
+        if is_new_entry:
+            self._print_entry(entry) 
+    
+    def _save_csv_file(self, csv_rows, csv_filepath=""):
+        """
+        Save the translation data into a CSV file.
+
+        Args:
+            csv_rows (list): List of dictionaries representing rows of data to be saved in CSV format.
+            csv_filepath (str, optional): Filepath where the CSV file will be saved. If not provided,
+                a default filepath is used based on the source language. Defaults to "".
+                
+        Returns:
+            0 if CSV data could be saved or 1 if csv_rows is empty.
+
+        Notes:
+            This method checks if pandas (pd) is imported; if not, it imports it dynamically.
+            It then converts the list of dictionaries (csv_rows) into a pandas DataFrame
+            and saves it as a CSV file. If no filepath is provided, a default filepath is used
+            based on the source language.
+        """
+        def add_column_styles(df, column_styles, comments_editable=False):
+            # Define styles for specific columns: column_styles
+
+            # Create HTML for table headers
+            th_elements = df.columns.map(lambda col: f'<th style="{column_styles.get(col, "")}">{col}</th>')
+
+            # Create HTML for table rows
+            tr_elements = df.apply(lambda row: ''.join([f'<td contenteditable="{True if comments_editable and col == "Comments" else False}" style="{column_styles.get(col, "")}">{row[col]}</td>' for col in df.columns]), axis=1)
+            
+            # Combine into complete HTML table
+            html = f'<table id="myTable"><thead><tr>{" ".join(th_elements)}</tr></thead><tbody>'
+            for row in tr_elements:
+                html += f'<tr>{row}</tr>'
+            html += '</tbody></table>'
+
+            return html
+
+        def make_clickable(val):
+            return f'<a href="{val}">{os.path.basename(val)}</a>'
+
+        def replace_newlines_and_bold(val):
+            if isinstance(val, str):  # Check if the value is a string
+                val = val.replace('\n', '<br>')  # Replace newline characters
+                val = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', val)  # Replace **text** with <strong>text</strong>
+            return val
+
+        styles = '''
+        <style>
+        table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        th, td {
+          padding: 12px;
+          text-align: left;
+          border: 1px solid #dddddd;
+          white-space: nowrap; /* Prevent text wrapping */
+          overflow: hidden; /* Hide overflow text */
+          /*text-overflow: ellipsis; /* Show ellipsis for overflow text */
+        }
+        th {
+          background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+          background-color: #f9f9f9;
+        }
+        </style>
+        '''
+
+        # Adding DataTables CSS and JS, and jQuery UI for resizing
+        datatables_includes = '''
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+        <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/colreorder/1.5.4/js/dataTables.colReorder.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/colreorder/1.5.4/css/colReorder.dataTables.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/colresizable/1.6.0/colResizable-1.6.min.js"></script>
+        <script>
+        $(document).ready( function () {
+            // Initialize DataTables with column reorder and resizing
+            var table = $('#myTable').DataTable({
+                colReorder: true,
+                // Initial column widths
+                // Adjust based on column index
+                columnDefs: [
+                    {column_defs} 
+                ],
+            });
+       
+            // Initialize column resizing
+            $('#myTable').colResizable({
+                liveDrag: true,
+                postbackSafe: true,
+                partialRefresh: true,
+                resizeMode: 'fit',  // Optionally adjust resizing mode
+                onResize: function(event) {
+                    // Save column widths after resize (example: store in local storage)
+                    localStorage.setItem('dataTableColumnWidths-' + tableIdentifier, JSON.stringify(table.columns().width().toArray()));
+                }
+            });
+        
+            // Optionally, restore column widths on page load
+            var storedColumnWidths = localStorage.getItem('dataTableColumnWidths-' + tableIdentifier);
+            if (storedColumnWidths) {
+                table.columns().every(function(index) {
+                    this.width(JSON.parse(storedColumnWidths)[index]);
+                });
+                table.draw();  // Redraw the table with restored widths
+            }
+            
+            // Load comments from local storage
+            {load_comments}
+        } );
+        </script>
+        <script>
+        function saveComments() {
+            var comments = {};
+            $('#myTable tbody tr').each(function() {
+                var word = $(this).find('td').eq({word_index}).text();
+                var comment = $(this).find('td').eq({comments_index}).text();
+                comments[word] = comment;
+            });
+            localStorage.setItem('comments-' + tableIdentifier, JSON.stringify(comments));
+            alert('Comments saved!');
+        }
+
+        function loadComments() {
+            var comments = JSON.parse(localStorage.getItem('comments-' + tableIdentifier));
+            if (comments) {
+                $('#myTable tbody tr').each(function() {
+                    var word = $(this).find('td').eq({word_index}).text();
+                    if (comments[word]) {
+                        $(this).find('td').eq({comments_index}).text(comments[word]);
+                    }
+                });
+            }
+        }
+        </script>
+        '''
+        
+        if len(csv_rows[0]) == 0:
+            print("`csv_rows` is empty! No translation data to be saved in a CSV file.")
+            return 1
+        
+        if self.pd is None:
+            # import pandas as pd
+            self.pd = import_module("pandas", alias="pd")
+        
+        # Create a DataFrame from the CSV rows
+        df = self.pd.DataFrame(csv_rows)
+        
+        column_to_min_width = {}
+        valid_column_names = list(csv_rows[0].keys())
+        for col_name in valid_column_names:
+            column_to_min_width[col_name] = COLUMN_TO_MIN_WIDTH[col_name]
+            
+        column_to_col_index = dict([(k, idx) for idx, (k,v) in enumerate(column_to_min_width.items())])
+        
+        column_defs = ""
+        for idx, (col, min_width) in enumerate(column_to_min_width.items()):
+            width = min_width.split(":")[1].strip()
+            column_defs += f"{{ width: '{width}', targets: {idx} }},"
+
+        datatables_includes = datatables_includes.replace("{word_index}", str(column_to_col_index['Word']))
+        datatables_includes = datatables_includes.replace("{comments_index}", str(column_to_col_index['Comments']))
+        datatables_includes = datatables_includes.replace("{column_defs}", column_defs)
+
+        # If not filepath for CSV file given, save it in the current working directory
+        if not csv_filepath:
+            csv_filepath = os.path.join(
+                os.getcwd(), 
+                f'{self.src_lang_fullname.lower()}_words_{self.target_lang_fullname.lower()}_translation.csv')
+        # File path of CSV file without extension
+        filepath_no_ext = get_filepath_without_extension(csv_filepath)
+     
+        # Create a unique identifier for the table based on the current time
+        tableIdentifier = re.sub(r'\W+', '', str(time.time()))  # Create a sanitized identifier
+
+        # Save the translation data in a CSV file
+        print(f"\nSaving CSV file: {csv_filepath}")
+        df.to_csv(f'{csv_filepath}', index=False, encoding='utf-8-sig')
+
+        ## HTML page containing the table
+        # Apply the necessary transformations
+        df = df.map(replace_newlines_and_bold)
+        if 'Audio (Word)' in df.columns:
+            df['Audio (Word)'] = df['Audio (Word)'].apply(make_clickable)
+        
+        if self.add_save_comments_button:
+            load_comments = "loadComments();"
+            save_comments_button = """
+                <div style="position: relative; overflow-x: auto;">
+                    <div style="position: fixed; top: 2px; right: 500px; z-index: 100;">
+                        <button onclick="saveComments()" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 14px;">
+                            Save Comments
+                        </button>
+                    </div>
+                </div>
+            """
+        else:
+            load_comments = ""
+            save_comments_button = ""
+ 
+        datatables_includes = datatables_includes.replace("{load_comments}", load_comments)
+
+        html_content = f"""
+            <script>var tableIdentifier = "{tableIdentifier}";</script>
+            {styles}
+            {datatables_includes}
+            {add_column_styles(df, column_styles=column_to_min_width, comments_editable=self.add_save_comments_button)}
+            {save_comments_button}
+        """
+        
+        # Save the HTML content to a file
+        html_file_path = f'{filepath_no_ext}.html'  
+        with open(html_file_path, 'w') as file:
+            file.write(html_content)
+
+        print(f"Saving HTML file: {html_file_path}")
+        
+        return 0
+    
+    def _segment_text(self, text, lang):
+        """
+        Segment text into individual words and their parts of speech.
+
+        Args:
+            text (str): The text to segment.
+            lang (str): The language code of the text.
+
+        Returns:
+            list: A list of tuples containing segmented words and their parts of speech.
+            
+        Raises:
+            ValueError: if the given language is not supported by spaCy.
+        """
+        if lang == 'zh':
+            if self.pseg is None:
+                # import jieba
+                jieba = import_module("jieba")
+                # import jieba.posseg as pseg
+                self.pseg = import_with_importlib("jieba.posseg", alias="pseg")
+            words = self.pseg.lcut(text)
+            return list(words)  # Keeping order by using list instead of set
+        else:
+            spacy_model_name = f'{lang}_core_web_sm'
+            if self.spacy is None:
+                # import spacy
+                self.spacy = import_module("spacy")
+            print("Loading spaCy model...")
+            nlp = self._load_spacy_model(spacy_model_name)
+            if nlp == 1:
+                print(f"spaCy model '{spacy_model_name}' not found. Trying to download it.")
+                download_spacy_model(spacy_model_name)
+                nlp = self._load_spacy_model(spacy_model_name)
+                if nlp == 1:
+                    print(f"spaCy model '{spacy_model_name}' couldn't be loaded. Trying to "
+                          f"load another model: '{lang}_core_news_sm'")
+                    spacy_model_name = f'{lang}_core_news_sm'
+                    nlp = self._load_spacy_model(spacy_model_name)
+                    if nlp == 1:
+                        print(f"spaCy model '{spacy_model_name}' not found. Trying to download it.")
+                        download_spacy_model(spacy_model_name)
+                        nlp = self._load_spacy_model(spacy_model_name)
+                        if nlp == 1:
+                            raise ValueError(f"Unsupported language: {lang}")
+                            
+            print(f"spaCy model '{spacy_model_name}' was successfully loaded!")
+            print("")
+
+            doc = nlp(text)
+            return [(token.text, token.pos_) for token in doc]
+    
+    def translate(self, src_text, target_lang, src_text_origin="", 
+                  lang_detector=LANG_DETECTOR, 
+                  transl_model_name=TRANSL_MODEL_MAP.get(TRANSL_MODEL), 
+                  gen_model_name=GEN_MODEL_MAP.get(GEN_MODEL),
+                  vocab_csv_filepath="", audio_main_dirpath=AUDIO_MAIN_DIRPATH, audio_base_url="",
+                  add_pos=False, add_sentences=False, add_audio_text=False, add_audio_words=False,
+                  add_save_comments_button=False):
+        """
+        Translate the source text into the target language and perform various augmentation tasks.
+
+        Args:
+            src_text (str): The source text to be translated.
+            target_lang (str): The target language code to translate the text into.
+            src_text_origin (str): Origin of the source text. Default to "".
+            lang_detector (str, optional): The language detector to determine the source text's language. Defaults to "polyglot".
+            transl_model_name (str, optional): The translation model to use. Defaults to "Helsinki-NLP/opus-mt".
+            gen_model_name (str, optional): The text generation model to use. Defaults to "gemini-pro".
+            vocab_csv_filepath (str, optional): Path to the CSV file to save the vocabulary. Defaults to "".
+            audio_main_dirpath (str, optional): Path to the main directory for storing audio files. Defaults to "~/audio/".
+            add_pos (bool, optional): Whether to add part-of-speech tags. Defaults to False.
+            add_sentences (bool, optional): Whether to generate example sentences. Defaults to False.
+            add_audio_text (bool, optional): Whether to generate audio for the entire text. Defaults to False.
+            add_audio_words (bool, optional): Whether to generate audio for individual words. Defaults to False.
+
+        Returns:
+            int: 0 if successful, 1 if language detection fails.
+
+        Raises:
+            ValueError: If source language equals target language.
+
+        Notes:
+            This method performs the following tasks:
+            1. Detects the language of the source text.
+            2. Loads the necessary translation, text generation, and TTS models.
+            3. Converts the source text to pinyin if it's in Chinese.
+            4. Translates the source text into the target language.
+            5. Processes each word extracted from the source text.
+            6. Optionally generates example sentences.
+            7. Saves the vocabulary to a CSV file.
+            8. Generates audio files for the entire text and individual words if requested.
+        """
+        # TODO: find how to add default values in docstrings, e.g. lang_detector
+        
+        ## Dynamic Parameter Attributes
+        # Get the frame object for the caller's stack frame
+        frame = inspect.currentframe()
+        # Get the arguments passed to the method
+        args, _, _, values = inspect.getargvalues(frame)
+        # Iterate over the arguments and set them as attributes
+        for arg in args[1:]:  # Skip 'self'
+            setattr(self, arg, values[arg])
+        
+        # Detect language of source text
+        self.src_lang = detect_language(self.src_text, lang_detector=self.lang_detector)
+        if self.src_lang is None:
+            # Language detection failed
+            return 1
+        
+        # TODO: explain why, you can have zh-... and zh-...
+        if self.src_lang.startswith("zh"):
+            self.src_lang = "zh"
+    
+        if self.src_lang == self.target_lang:
+            raise ValueError("Source and target languages must be different!")
+            
+        # Get fullnames of languages from language codes
+        self.src_lang_fullname = get_language_full_name(self.src_lang)
+        self.target_lang_fullname = get_language_full_name(self.target_lang)
+        
+        # Remove punctuation from the source text
+        # Segmentation done on text without punctuation
+        # TODO: protegê-la -> protegêla
+        self.src_text_no_punct = remove_punctuation(self.src_text)
+        
+        # Load the TTS model and create audio directories
+        self._load_TTS_model()
+
+        # Lad the right translation model
+        self._load_transl_model()
+            
+        # Load the right text generation model
+        self._load_gen_model()
+
+        # Convert the source text into pinyin if it is necessary
+        if self.src_lang == "zh":
+            self.src_text_pinyin = self._convert_to_pinyin(self.src_text)
+        else:
+            self.src_text_pinyin = ""
+                
+        # Translate the entire text to get context-aware translation
+        self.full_translation = self.transl_model.translate_text(self.src_text)
+        # Convert the full translation into pinyin if it is the case
+        if self.target_lang == "zh":
+            self.full_translation_pinyin = self._convert_to_pinyin(self.full_translation)
+        else:
+            self.full_translation_pinyin = ""
+        
+        # Get the file paths of the audio and content of the source text
+        if self.add_audio_text:
+            if self.src_lang == "zh":
+                filename = self.src_text_pinyin[:100].strip()
+                self.audio_text_content = self.src_text + "\n\n" + self.src_text_pinyin
+            else:
+                filename = self.src_text_no_punct[:100].strip()
+                self.audio_text_content = self.src_text
+            self.audio_text_filepath = os.path.join(self.audio_text_dirpath, filename + ".wav")
+            self.audio_text_content_filepath = os.path.join(self.audio_text_dirpath, filename + ".txt")
+
+        # Segment the source text (with no punctuations) into words with their parts of speech
+        # words is a list of tuples (word, POS), e.g. ('crucial', 'ADJ')
+        words = self._segment_text(self.src_text_no_punct, self.src_lang)
+
+        # Process each extracted word: translate, get its pinyin (if it applies), 
+        # generate example sentences, generate pronounciation sounds, ...
+        csv_rows = self._process_extracted_words(words)
+
+        self._save_csv_file(csv_rows, self.vocab_csv_filepath)
+
+        print("")
+        
+        ## Audio generation tasks: 
+        # 1. Generate audio sounds for the whole source text
+        # 2. Generate audio sounds for each extracted word from the source text
+        # TODO: if audio couldn't be generated (e.g. audio file already present), display message
+        self._process_audio_text()
+        self._process_audio_words()
+        
+        print("")
+        
+        return 0
+
+
+###############
+# Main Function
+###############
 def main():
     exit_code = 0
     parser = setup_argparser()
-    # TODO: uncomment when ready
-    # args = parser.parse_args()
-    #print(parser.print_help())
-    #return 0
-    
-    args = parser.parse_args(['-t', 'É crucial protegê-la para o bem do planeta e das gerações futuras.', 
-                              '-l', 'en', '-m', 'gemini'])
-    
+
     # Process arguments
-    if not args.csv_file:
-        args.csv_file = ""
+    if not args.csv_filepath:
+        args.csv_filepath = ""
     # Translate short model names to full model names
-    args.transl_model = MODEL_MAP.get(args.transl_model, args.transl_model)
-    args.gen_model = MODEL_MAP.get(args.gen_model, args.gen_model)
+    args.transl_model = TRANSL_MODEL_MAP.get(args.transl_model, TRANSL_MODEL)
+    args.gen_model = GEN_MODEL_MAP.get(args.gen_model, GEN_MODEL)
     
     vocab_aug = VocabAugmentor()
-    vocab_aug.translate(args.text, args.target_lang, transl_model_name=args.transl_model, gen_model_name=args.gen_model,
-                        lang_detector=args.lang_detector, vocab_csv_file=args.csv_file, 
-                        add_sentences=args.add_sentences, add_pos=args.add_pos, 
-                        add_audio_words=args.add_audio_words, add_audio_text=args.add_audio_text)
+    vocab_aug.translate(args.text, 
+                        args.target_lang, 
+                        args.text_origin,
+                        lang_detector=args.lang_detector, 
+                        transl_model_name=args.transl_model, 
+                        gen_model_name=args.gen_model, 
+                        vocab_csv_filepath=args.csv_filepath, 
+                        audio_main_dirpath=args.audio_dirpath,
+                        audio_base_url=args.audio_base_url,
+                        add_pos=args.add_pos, 
+                        add_sentences=args.add_sentences, 
+                        add_audio_text=args.add_audio_text, 
+                        add_audio_words=args.add_audio_words,
+                        add_save_comments_button=args.add_save_comments_button)
     return exit_code
 
 
