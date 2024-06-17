@@ -1,4 +1,4 @@
-# Vocab-Augmentor [work-in-progress]
+# Vocab-Augmentor
 ## Overview
 
 **vocab.py** is a Python script designed to help language learners expand their 
