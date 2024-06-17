@@ -32,6 +32,75 @@ languages.
 - **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access
   and further study, including clickable links to audio files.
 
+## Models
+
+Here's an improved version of the Dependencies section:
+
+---
+
+## Dependencies
+
+### Requirements
+
+- **Python**: version 3.10.3+
+- `langcodes`: to get the full name of a language from its short code
+
+### Selective Module Installation
+
+Modules are installed only when needed for specific tasks. Below is a 
+breakdown of the modules required based on different functionalities:
+
+1. **Translation Models**:
+   - **facebook/mbart-large-50-many-to-many-mmt**:
+     - `transformers`
+   - **Helsinki-NLP/opus-mt**:
+     - `transformers`
+
+2. **Translation and Sentence Generation Models**:
+   - **gemini-pro**:
+     - `google.generativeai` (for API connection using `GEMINI_API_KEY`)
+   - **meta-llama/Meta-Llama-3-8B-Instruct**:
+     - `huggingface_hub` (to login and download the LLM llama 3 8b)
+     - `torch`
+     - `transformers`
+
+3. **Text-to-Speech (TTS) Models**:
+   - **facebook/mms-tts-por**:
+     - `transformers`
+     - `torch`
+     - `scipy`
+     - `numpy`
+   - **MeloTTS**:
+     - `gradio_client` (for API access to interact with TTS)
+
+4. **Language Detection Methods**:
+   - **langdetect**:
+     - `langdetect`
+   - **langid**:
+     - `langid`
+   - **polyglot**:
+     - `pyicu`
+     - `pycld2`
+     - `pycld3`
+
+     Note: When using GPU T4 with polyglot, `pycld3` can't be
+     installed, hence polyglot can't be used. An alternative detection
+     method will be used in such cases.
+
+5. **Language-Specific Modules**:
+   - **Chinese (source or target language)**:
+     - `pypinyin`
+
+6. **Data Management**:
+   - **Saving translation data to CSV**:
+     - `pandas`
+
+7. **Text Segmentation**:
+   - **Chinese**:
+     - `jieba`
+   - **Other languages**:
+     - `spacy`
+
 ## Installation ⭐
 
 Install the package `vocab_augmentor` with `pip`:
@@ -99,7 +168,8 @@ learning tasks.
 - **GPU Recommendation**: When using `llama 3-8b`, GPU usage is highly recommended 
   for faster processing.
   
-- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate example sentences.
+- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate
+  example sentences.
   - `Gemini 1.0 Pro` is faster as it uses an API.
 
 ## Usage
@@ -172,7 +242,8 @@ options:
    - `--as`: Two example sentences will be generated for each segmented word from the source text
    - `--aaw`: Audio pronounciations will be generated for each segmented word from the source text
 
-3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
+3. The script will create an `audio/` directory (if it doesn't already exist) and save the
+   audio files there. The CSV file will include clickable links to these audio files.
 
 ![Terminal output when running the script vocab](./docs/images/terminal_output_sol_y_cielo.png)
 
