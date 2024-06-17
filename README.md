@@ -18,6 +18,10 @@ languages.
   for learners of different languages.
 - **Advanced Translation Models**: Choose from multiple state-of-the-art translation
   models for accurate translations.
+  - `facebook/mbart-large-50-many-to-many-mmt`
+  - `Helsinki-NLP/opus-mt`
+  - `Gemini 1.0 Pro`
+  - `llama 3-8b`
 - **Automatic Segmentation**: Segments the provided text to identify individual words.
 - **New Vocabulary Detection**: Detects words not present in your existing vocabulary
   list.
@@ -33,8 +37,6 @@ languages.
   and a feature-rich HTML file.
   - HTML features include `DataTables` stylesheet, column reordering, resizable
     columns, search functionality, pagination, and sortable columns.
-    
-## Models
 
 ## Dependencies
 
