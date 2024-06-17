@@ -23,8 +23,10 @@ languages.
   list.
 - **Detailed Word Information**: Saves new words along with their translation, pinyin
   (if applicable), and part of speech (POS).
-- **Audio Pronunciation**: Adds pronunciation sounds for new words using MeloTTS for
+- **Audio Pronunciation**: Adds pronunciation sounds for new words using `MeloTTS` for
   supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
+
+  For Portuguese tts, `facebook/mms-tts-por` is used.
 - **Selective Module Installation**: Modules are installed only when needed for
   specific tasks.
 - **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access
