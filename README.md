@@ -34,7 +34,7 @@ languages.
 5. **Update Vocabulary List**: Adds new words to the vocabulary list along with their translation, pinyin (if applicable), POS, and clickable links to the pronunciation sound files.
 6. **Export**: The updated vocabulary list is saved to a CSV file, with clickable links to the audio files included.
 
-## Installation
+## Installation ⭐
 
 Install the package `vocab_augmentor` with `pip`:
 ```terminal
@@ -125,7 +125,7 @@ learning tasks.
 
 ## Usage
 
-### Script options
+### Script options ⭐
 
 To display the `vocab` script list of options and their descriptions:
 ```terminal
@@ -179,7 +179,7 @@ options:
                                       (experimental)
 ```
 
-### Run the script `vocab`
+### Run the script `vocab` ⭐
 
 1. Run the script:
    ```terminal
