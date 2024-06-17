@@ -2600,6 +2600,7 @@ def main():
     # Process arguments
     if not args.csv_filepath:
         args.csv_filepath = ""
+        
     # Translate short model names to full model names
     args.transl_model = TRANSL_MODEL_MAP.get(args.transl_model, TRANSL_MODEL)
     args.gen_model = GEN_MODEL_MAP.get(args.gen_model, GEN_MODEL)
