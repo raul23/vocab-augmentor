@@ -176,6 +176,8 @@ options:
    ```
 2. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
 
+![Terminal output when running the script vocab](./docs/images/terminal_output_sol_y_cielo.png)
+
 ### Example CSV Structure
 
 The CSV file might have the following structure:
