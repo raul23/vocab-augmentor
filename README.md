@@ -56,7 +56,7 @@ breakdown of the modules required based on different functionalities:
    - **gemini-pro**:
      - `google.generativeai` (for API connection using `GEMINI_API_KEY`)
    - **meta-llama/Meta-Llama-3-8B-Instruct**:
-     - `huggingface_hub` (to login and download the LLM llama 3 8b)
+     - `huggingface_hub` (to login and download `LLM llama 3 8b`)
      - `torch`
      - `transformers`
 
@@ -67,7 +67,7 @@ breakdown of the modules required based on different functionalities:
      - `scipy`
      - `numpy`
    - **MeloTTS**:
-     - `gradio_client` (for API access to interact with TTS)
+     - `gradio_client` (for API access to interact with `MeloTTS`)
 
 4. **Language Detection Methods**:
    - **langdetect**:
@@ -79,9 +79,9 @@ breakdown of the modules required based on different functionalities:
      - `pycld2`
      - `pycld3`
 
-     Note: When using GPU T4 with polyglot, `pycld3` can't be
-     installed, hence polyglot can't be used. An alternative detection
-     method will be used in such cases.
+     Note: When using GPU T4 with `polyglot`, `pycld3` can't be
+     installed, hence `polyglot` can't be used. Use an alternative
+     detection method in such cases.
 
 5. **Language-Specific Modules**:
    - **Chinese (source or target language)**:
