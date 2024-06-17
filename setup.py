@@ -8,16 +8,16 @@ from setuptools.command.build_py import build_py as build_py_orig
 
 from vocab_augmentor import __version__
 
-major = 3
-minor = 10
-patch = 13
-
-if sys.version_info < (major, minor, patch):
-    raise RuntimeError(f"vocab_augmentor v0.1.0+ supports Python {major}.{minor}.{patch} and above.")
+MAJOR = 3
+MINOR = 10
+PATCH = 13
 
 VERSION = __version__
 excluded = []
-    
+
+if sys.version_info < (MAJOR, MINOR, PATCH):
+    raise RuntimeError(f"vocab_augmentor v{VERSION}+ supports Python {MAJOR}.{MINOR}.{PATCH} and above.")
+
 
 # IMPORTANT: bdist_wheel behaves differently to sdist
 # - MANIFEST.in works for source distributions, but it's ignored for wheels,
@@ -64,7 +64,7 @@ setup(name='vocab-augmentor',
       author_email='rchfe23@gmail.com',
       license='MIT',
       python_requires='>=3.10.13',
-      # packages=find_packages(exclude=['tests']),
+      packages=find_packages(exclude=['tests']),
       cmdclass={'build_py': build_py},
       include_package_data=True,
       exclude_package_data={'': ['docs/*']},
