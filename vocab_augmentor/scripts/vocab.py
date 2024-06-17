@@ -2596,7 +2596,8 @@ class VocabAugmentor:
 def main():
     exit_code = 0
     parser = setup_argparser()
-
+    args = parser.parse_args()
+    
     # Process arguments
     if not args.csv_filepath:
         args.csv_filepath = ""
