@@ -12,6 +12,9 @@ languages.
 
 ![Table (HTML) displaying translation data including audio links, POS](./docs/images/table_sol_y_cielo.png)
 
+> HTML table displaying words extracted from source text, including translation data, audio links,
+> and part of speech (POS)
+
 ## Features
 
 - **Multi-Language Support**: Supports a variety of languages, making it versatile
