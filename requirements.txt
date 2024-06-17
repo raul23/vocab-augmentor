@@ -1,8 +1,1 @@
-jieba
 langcodes
-language_data
-pandas
-pypinyin
-sacremoses
-spacy
-transformers
