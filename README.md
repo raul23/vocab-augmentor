@@ -42,6 +42,7 @@ languages.
 
 ### Requirements
 
+- **Platform**: tested on Linux
 - **Python**: version 3.10.3+
 - `langcodes`: to get the full name of a language from its short code
 
@@ -135,22 +136,12 @@ saved as environment variables. Follow the steps below to manage your API keys:
      ```sh
      export GEMINI_API_KEY='your_gemini_api_key'
      ```
-   - In Windows, set the environment variable through the Command Prompt or System
-     Properties:
-     ```cmd
-     setx GEMINI_API_KEY "your_gemini_api_key"
-     ```
 
 2. **Hugging Face API Key for Llama 3-8b**
    - Save your Hugging Face API key as an environment variable named `HF_API_KEY`.
    - In a Unix-based system, add the following line to your `.bashrc` or `.zshrc` file:
      ```sh
      export HF_API_KEY='your_hugging_face_api_key'
-     ```
-   - In Windows, set the environment variable through the Command Prompt or System
-     Properties:
-     ```cmd
-     setx HF_API_KEY "your_hugging_face_api_key"
      ```
 
 ### Important Notes
