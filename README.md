@@ -38,14 +38,6 @@ pip install git+https://github.com/raul23/vocab-augmentor/#egg=vocab-augmentor
    ```terminal
    vocab --version
    ```
-
-## Performance Recommendations
-    
-- **GPU Recommendation**: When using `llama 3-8b`, GPU usage is highly recommended 
-  for faster processing.
-  
-- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate example sentences.
-  - `Gemini 1.0 Pro` is faster as it uses an API.
     
 ## API Key Management
 
@@ -111,6 +103,14 @@ variables.
 By following these steps, you can seamlessly integrate API keys into the 
 Vocab-Augmentor script and leverage its full capabilities for advanced language 
 learning tasks.
+
+## Performance Recommendations
+    
+- **GPU Recommendation**: When using `llama 3-8b`, GPU usage is highly recommended 
+  for faster processing.
+  
+- **Text Generation**: Use either `Gemini 1.0 Pro` or `llama 3-8b` to generate example sentences.
+  - `Gemini 1.0 Pro` is faster as it uses an API.
 
 ## Usage
 
