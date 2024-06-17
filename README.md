@@ -77,8 +77,6 @@ saved as environment variables. Follow the steps below to manage your API keys:
 ### Important Notes
 
 - Ensure your API keys are kept confidential and not shared publicly.
-- The script prioritizes environment variables over Kaggle Secrets. If both are 
-  set, the environment variables will be used.
 - Using API keys allows the script to access powerful language models and 
   generate accurate translations and text examples efficiently.
 
