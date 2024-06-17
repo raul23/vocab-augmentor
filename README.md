@@ -47,8 +47,8 @@ languages.
 
 ### Selective Module Installation
 
-Modules are installed only when needed for specific tasks. Below is a 
-breakdown of the modules required based on different functionalities:
+Modules are installed automatically by the `vocab` script only when needed for specific 
+tasks. Below is a breakdown of the modules required based on different functionalities:
 
 1. **Translation Models**:
    - **facebook/mbart-large-50-many-to-many-mmt**:
