@@ -84,7 +84,7 @@ breakdown of the modules required based on different functionalities:
      - `pycld3`
 
      Note: When using GPU T4 with **polyglot**, `pycld3` can't be
-     installed, hence `polyglot` can't be used. Use an alternative
+     installed, hence **polyglot** can't be used. Use an alternative
      detection method in such cases.
 
 5. **Language-Specific Modules**:
