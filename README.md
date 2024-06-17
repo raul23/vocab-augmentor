@@ -36,19 +36,22 @@ languages.
 
 ## Installation
 
-1. Clone the repository:
+Install the package `vocab_augmentor` with `pip`:
+```terminal
+pip install git+https://github.com/raul23/vocab-augmentor/#egg=vocab-augmentor
+```
+
+**Test installation**
+
+1. Test your installation by importing `vocab_augmentor` and printing its version:
    ```terminal
-   git clone https://github.com/raul23/Vocab-Augmentor.git
+   python -c "import vocab_augmentor; print(vocab_augmentor.__version__)"
    ```
-2. Navigate to the project directory:
+2. You can also test that you have access to the `vocab` script by
+   showing the program's version:
    ```terminal
-   cd Vocab-Augmentor
+   vocab --version
    ```
-3. Install the required dependencies:
-   ```terminal
-   pip install jieba langcodes language_data pandas pypinyin sacremoses spacy transformers
-   ```
-   <!--- TODO: pip install -r requirements.txt --->
 
 ## Performance Recommendations
 
