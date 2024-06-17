@@ -14,13 +14,21 @@ languages.
 
 ## Features
 
-- **Multi-Language Support**: Supports a variety of languages, making it versatile for learners of different languages.
-- **Advanced Translation Models**: Choose from multiple state-of-the-art translation models for accurate translations.
+- **Multi-Language Support**: Supports a variety of languages, making it versatile
+  for learners of different languages.
+- **Advanced Translation Models**: Choose from multiple state-of-the-art translation
+  models for accurate translations.
 - **Automatic Segmentation**: Segments the provided text to identify individual words.
-- **New Vocabulary Detection**: Detects words not present in your existing vocabulary list.
-- **Detailed Word Information**: Saves new words along with their translation, pinyin (if applicable), and part of speech (POS).
-- **Audio Pronunciation**: Adds pronunciation sounds for new words using MeloTTS for supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
-- **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access and further study, including clickable links to audio files.
+- **New Vocabulary Detection**: Detects words not present in your existing vocabulary
+  list.
+- **Detailed Word Information**: Saves new words along with their translation, pinyin
+  (if applicable), and part of speech (POS).
+- **Audio Pronunciation**: Adds pronunciation sounds for new words using MeloTTS for
+  supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
+- **Selective Module Installation**: Modules are installed only when needed for
+  specific tasks.
+- **CSV Export**: Updates and exports the vocabulary list to a CSV file for easy access
+  and further study, including clickable links to audio files.
 
 ## Installation ⭐
 
