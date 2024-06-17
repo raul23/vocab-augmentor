@@ -45,8 +45,7 @@ pip install git+https://github.com/raul23/vocab-augmentor/#egg=vocab-augmentor
 
 To utilize the advanced translation and text generation features of
 `Gemini 1.0 Pro` and `llama 3-8b`, API keys are required. These keys must be
-saved as environment variables or can be retrieved from Kaggle Secrets. Follow
-the steps below to manage your API keys:
+saved as environment variables. Follow the steps below to manage your API keys:
 
 ### Setting Up Environment Variables
 
@@ -74,25 +73,6 @@ the steps below to manage your API keys:
      ```cmd
      setx HF_API_KEY "your_hugging_face_api_key"
      ```
-
-### Using Kaggle Secrets
-
-If you prefer to use Kaggle Secrets to manage your API keys, the script will
-automatically attempt to retrieve the keys if they are not found in the environment
-variables.
-
-1. **Store API Keys in Kaggle Secrets**
-   - In your Kaggle notebook, navigate to the "Add-ons" tab, select "Secrets", 
-     and add your keys:
-     - Key Name: `GEMINI_API_KEY`
-     - Key Value: `your_gemini_api_key`
-     - Key Name: `HF_API_KEY`
-     - Key Value: `your_hugging_face_api_key`
-
-2. **Access API Keys in the Script**
-   - The script includes logic to check for the keys in the Kaggle Secrets if 
-     they are not found in the environment variables. No additional steps are 
-     required.
 
 ### Important Notes
 
