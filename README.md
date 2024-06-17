@@ -125,14 +125,67 @@ learning tasks.
 
 ## Usage
 
-### Run the script `vocab.py`
+### Script options
 
-1. Prepare your vocabulary list and input text.
-2. Run the script:
+To display the `vocab` script list of options and their descriptions:
+```terminal
+usage: vocab [OPTIONS] {TEXT} {TGT_LANG}
+
+Expand your vocabulary list by identifying and translating new words from provided text using various language models.
+
+options:
+  -v, --version                       Show program's version number and
+                                      exit.
+  -h, --help                          Display detailed usage instructions
+                                      and exit the program.
+  -t, --text TEXT                     The source text that will be
+                                      processed to identify and translate
+                                      new words.
+  -l, --target_lang TGT_LANG          Target language code into which the
+                                      source text will be translated (e.g.,
+                                      zh for Chinese, en for English, pt
+                                      for Portuguese).
+  -o, --text_origin ORIGIN            Origin of the source text, e.g. movie
+                                      script, book, URL of website, etc.
+  -d, --lang_detector NAME            Method to use for detecting the
+                                      language of the source text.
+                                      (default: polyglot)
+  -m, --transl_model NAME             Translation model to use for
+                                      translating the text.
+                                      (default: helsinki)
+  -g, --gen_model NAME                Language model to use for generating
+                                      example sentences in the source
+                                      language. (default:
+                                      gemini)
+  -c, --csv_filepath CSV_FILE         Path to the vocabulary CSV file. If
+                                      the file does not exist, a new one
+                                      will be created.
+  -a, --audio_dirpath AUDIO_DIR       Path to the main directory for
+                                      storing audio files. (default:
+                                      ~/audio/)
+  -b, --audio_base_url URL            Base URL to audio files of words.
+                                      (experimental)
+  --ap, --add_pos                     Flag to add or update part-of-speech
+                                      (POS) information for the words.
+  --as, --add_sentences               Flag to add or update example
+                                      sentences in the vocabulary list.
+  --aut, --add_audio_text             Flag to add or update audio
+                                      pronunciation for the source text.
+  --aaw, --add_audio_words            Flag to add or update audio
+                                      pronunciation for the extracted words
+                                      from the text.
+  --ascb, --add_save_comments_button  Flag to add 'Save Comments' button in
+                                      the HTML page of the table.
+                                      (experimental)
+```
+
+### Run the script `vocab`
+
+1. Run the script:
    ```terminal
-   vocab.py --vocab_list your_vocab_list.csv --input_text your_text.txt --model_name chosen_model
+   vocab -t 'cielo y sol' -l en -m gemini --aaw
    ```
-3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
+2. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
 
 ### Example CSV Structure
 
