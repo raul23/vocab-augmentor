@@ -174,14 +174,16 @@ options:
 
 1. Run the script:
    ```terminal
-   vocab -t 'cielo y sol' -l en -m gemini --ap --aaw
+   vocab -t 'cielo y sol' -l en -m gemini --ap --as --aaw
    ```
 
    **NOTES**:
    - `-t 'cielo y sol'`: the source text to be translated from Spanish to English (`-l en`)
    - `-m gemini`: the `Gemini 1.0 Pro` model is used for translation from Spanish to English
    - `--ap`: Part-of-Speech (POS) tags will be added for each segmented word from the source text
+   - `--as`: Two example sentences will be generated for each segmented word from the source text
    - `--aaw`: Audio pronounciations will be generated for each segmented word from the source text
+
 3. The script will create an `audio/` directory (if it doesn't already exist) and save the audio files there. The CSV file will include clickable links to these audio files.
 
 ![Terminal output when running the script vocab](./docs/images/terminal_output_sol_y_cielo.png)
