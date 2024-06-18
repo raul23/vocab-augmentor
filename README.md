@@ -68,7 +68,7 @@ tasks. Below is a breakdown of the modules required based on different functiona
 
 Note: When using GPU T4 with **polyglot**, `pycld3` can't be installed, 
 hence **polyglot** can't be used. Use an alternative detection method 
-in such cases.
+in such cases (e.g. `langdetect` or `langid`).
 
 ## Installation ⭐
 
