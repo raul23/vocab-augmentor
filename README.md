@@ -259,9 +259,10 @@ The CSV file might have the following structure:
 
 ## Known Issues and Limitations
 
-- When using GPU T4 with `polyglot`, `pycld3` can't be installed, hence `polyglot` can't
-  be used. Use an alternative detection method in such cases (e.g. `langid` or
-  `langdetect`).
+- **Language detection**: When running the script on a GPU T4 and selecting
+  `polyglot` for automatic language detection, `pycld3` can't be installed,
+  hence `polyglot` can't be used. Use an alternative detection method in such
+  cases (e.g. `langid` or `langdetect`).
 - **Chinese Text-to-Speech:** For Chinese text, `MeloTTS` may have difficulties
   with single-character words and low volume on some words.
   - Spanish TTS is good except for very small words like "y".
