@@ -26,8 +26,6 @@ feature-rich HTML file for easy access and further study.
   - `llama 3-8b`
 - **New Vocabulary Detection**: Detects words not present in your existing vocabulary
   list.
-- **Detailed Word Information**: Saves new words along with their translation, pinyin
-  (if applicable), and part of speech (POS).
 - **Audio Pronunciation**: Adds pronunciation sounds for new words using `MeloTTS` for
   supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 
@@ -43,6 +41,9 @@ feature-rich HTML file for easy access and further study.
     columns, search functionality, pagination, and sortable columns.
   - The CSV and HTML files include clickable links to audio files (`.wav`)
     containing pronounciation sounds of extracted words.
+  - **Detailed Word Information**: Saves new words along with, among many other data,
+    their translation, pinyin (if applicable), part of speech (POS) and sentence
+    examples.
 
 ## Dependencies
 
