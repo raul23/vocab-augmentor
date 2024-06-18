@@ -190,7 +190,7 @@ options:
 
 1. Run the script:
    ```terminal
-   vocab -t 'cielo y sol' -l en -m gemini --ap --as --aaw
+   vocab -t 'Sol y cielo' -l en -m gemini --ap --as --aaw
    ```
 
    **NOTES**:
