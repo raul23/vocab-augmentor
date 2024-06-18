@@ -1,14 +1,19 @@
 # vocab-augmentor
 ## Overview
 
-**vocab-augmentor** is a Python package designed to help language learners expand their 
-vocabulary effortlessly. By leveraging advanced language models such as
-`facebook/mbart-large-50-many-to-many-mmt`, `Helsinki-NLP/opus-mt`,
-`Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any
-given text, translates them, and updates your personal vocabulary list.
-Additionally, it supports adding pronunciation sounds for new words using the
-`MeloTTS` and `facebook/mms-tts-por` text-to-speech libraries for supported
-languages.
+Sure, here's the modified intro:
+
+---
+
+## Overview
+
+**vocab-augmentor** is a Python package designed to help language learners expand their vocabulary 
+effortlessly. By leveraging advanced language models such as `facebook/mbart-large-50-many-to-many-mmt`, 
+`Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any 
+given text, translates them, and updates your personal vocabulary table. Additionally, it supports 
+adding pronunciation sounds for new words using the `MeloTTS` and `facebook/mms-tts-por` text-to-speech 
+libraries for supported languages. The updated vocabulary table is then exported to a CSV file and a 
+feature-rich HTML file for easy access and further study.
 
 ![Table (HTML) displaying translation data including audio links, POS](./docs/images/table_sol_y_cielo.png)
 
