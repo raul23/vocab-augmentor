@@ -47,7 +47,7 @@ feature-rich HTML file for easy access and further study.
 ### Requirements
 
 - **Platform**: tested on Linux
-- **Python**: version 3.10.3+
+- **Python**: version 3.10.13+
 - `langcodes`: to get the full name of a language from its short code
 
 ### Selective Module Installation
