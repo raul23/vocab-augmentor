@@ -276,5 +276,5 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Acknowledgments
 
-- Special thanks to the developers of the language models and MeloTTS used in this project.
+- Special thanks to the developers of the language models and `MeloTTS` used in this project.
 - Inspired by the need to make language learning more efficient and effective.
