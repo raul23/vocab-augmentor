@@ -194,7 +194,7 @@ options:
    ```
 
    **NOTES**:
-   - `-t 'cielo y sol'`: the source text to be translated from Spanish to English (`-l en`)
+   - `-t 'Sol y cielo'`: the source text to be translated from Spanish to English (`-l en`)
    - `-m gemini`: the `Gemini 1.0 Pro` model is used for translation from Spanish to English
    - `--ap`: Part-of-Speech (POS) tags will be added for each segmented word from the source text
    - `--as`: Two example sentences will be generated for each segmented word from the source text
