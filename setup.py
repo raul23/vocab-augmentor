@@ -53,7 +53,7 @@ setup(name='vocab-augmentor',
       long_description=README,
       long_description_content_type='text/markdown',
       classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Natural Language :: English',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3',
