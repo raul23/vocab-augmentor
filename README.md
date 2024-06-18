@@ -34,9 +34,8 @@ languages.
   supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 
   For Portuguese text-to-speech, `facebook/mms-tts-por` is used.
-- **Example Sentence Generation**: Generates example sentences for each segmented word using
-  one of the large language models (`Gemini 1.0 Pro` or `llama 3-8b`). Two example
-  sentences are generated for each word.
+- **Example Sentence Generation**: Generates two example sentences for each segmented
+  word using one of the large language models (`Gemini 1.0 Pro` or `llama 3-8b`). 
 - **Selective Module Installation**: Modules are installed only when needed for
   specific tasks.
 - **CSV and HTML Export**: Updates and exports the vocabulary table to a CSV file
