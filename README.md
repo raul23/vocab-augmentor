@@ -56,56 +56,19 @@ feature-rich HTML file for easy access and further study.
 Modules are installed automatically by the `vocab` script only when needed for specific 
 tasks. Below is a breakdown of the modules required based on different functionalities:
 
-1. **Translation Models**:
-   - **facebook/mbart-large-50-many-to-many-mmt**:
-     - `transformers`
-   - **Helsinki-NLP/opus-mt**:
-     - `transformers`
+| Functionality | Required Modules |
+|---|---|
+| Translation Models | - **facebook/mbart-large-50-many-to-many-mmt** (`transformers`) <br> - **Helsinki-NLP/opus-mt** (`transformers`) |
+| Translation & Sentence Generation | - **gemini-pro** (`google.generativeai`) <br> - **meta-llama/Meta-Llama-3-8B-Instruct** (`huggingface_hub`, `torch`, `transformers`) |
+| Text-to-Speech (TTS) | - **facebook/mms-tts-por** (`transformers`, `torch`, `scipy`, `numpy`) <br> - **MeloTTS** (`gradio_client`) |
+| Language Detection | - `langdetect` <br> - `langid` <br> - `polyglot` (`pyicu`, `pycld2`) |
+| Language-Specific | - Chinese (source/target): `pypinyin` |
+| Data Management | - Saving translations to CSV: `pandas` |
+| Text Segmentation | - Chinese: `jieba` <br> - Other languages: `spacy` |
 
-2. **Translation and Sentence Generation Models**:
-   - **gemini-pro**:
-     - `google.generativeai` (for API connection using *GEMINI_API_KEY*)
-   - **meta-llama/Meta-Llama-3-8B-Instruct**:
-     - `huggingface_hub` (to login and download **llama 3-8b**)
-     - `torch`
-     - `transformers`
-
-3. **Text-to-Speech (TTS) Models**:
-   - **facebook/mms-tts-por**:
-     - `transformers`
-     - `torch`
-     - `scipy`
-     - `numpy`
-   - **MeloTTS**:
-     - `gradio_client` (for API access to interact with **MeloTTS**)
-
-4. **Language Detection Methods**:
-   - **langdetect**:
-     - `langdetect`
-   - **langid**:
-     - `langid`
-   - **polyglot**:
-     - `pyicu`
-     - `pycld2`
-     - `pycld3`
-
-     Note: When using GPU T4 with **polyglot**, `pycld3` can't be
-     installed, hence **polyglot** can't be used. Use an alternative
-     detection method in such cases.
-
-5. **Language-Specific Modules**:
-   - **Chinese (source or target language)**:
-     - `pypinyin`
-
-6. **Data Management**:
-   - **Saving translation data to CSV**:
-     - `pandas`
-
-7. **Text Segmentation**:
-   - **Chinese**:
-     - `jieba`
-   - **Other languages**:
-     - `spacy`
+Note: When using GPU T4 with **polyglot**, `pycld3` can't be installed, 
+hence **polyglot** can't be used. Use an alternative detection method 
+in such cases.
 
 ## Installation ⭐
 
