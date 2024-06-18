@@ -41,6 +41,8 @@ feature-rich HTML file for easy access and further study.
   and a feature-rich HTML file.
   - HTML features include `DataTables` stylesheet, column reordering, resizable
     columns, search functionality, pagination, and sortable columns.
+  - The CSV and HTML files include clickable links to audio files (`.wav`)
+    containing pronounciation sounds of extracted words.
 
 ## Dependencies
 
@@ -201,7 +203,7 @@ options:
    - `--aaw`: Audio pronounciations will be generated for each segmented word from the source text
 
 3. The script will create an `audio/` directory (if it doesn't already exist) and save the
-   audio files there. The CSV file will include clickable links to these audio files.
+   audio files there. The CSV and HTML files will include clickable links to these audio files.
 
 ![Terminal output when running the script vocab](./docs/images/terminal_output_sol_y_cielo.png)
 
