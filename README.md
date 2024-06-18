@@ -33,7 +33,8 @@ languages.
 - **Audio Pronunciation**: Adds pronunciation sounds for new words using `MeloTTS` for
   supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 
-  For Portuguese text-to-speech, `facebook/mms-tts-por` is used.
+  For Portuguese text-to-speech, `facebook/mms-tts-por` is used. Sound files are
+  saved as `.wav.`
 - **Example Sentence Generation**: Generates two example sentences for each segmented
   word using one of the large language models (`Gemini 1.0 Pro` or `llama 3-8b`). 
 - **Selective Module Installation**: Modules are installed only when needed for
@@ -264,7 +265,6 @@ The CSV file might have the following structure:
 - **Chinese Text-to-Speech:** For Chinese text, `MeloTTS` may have difficulties
   with single-character words and low volume on some words.
   - Spanish TTS is good except for very small words like "y".
-  - Sound files are saved as `.wav.`
 
 ## Contributing
 
