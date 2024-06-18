@@ -3,7 +3,7 @@
 
 **vocab-augmentor** is a Python tool designed to help language learners expand their vocabulary 
 effortlessly. By leveraging advanced language models such as `facebook/mbart-large-50-many-to-many-mmt`, 
-`Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any 
+`Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, it identifies new words from any 
 given text, translates them, and updates your personal vocabulary table. Additionally, it supports 
 adding pronunciation sounds for new words using the `MeloTTS` and `facebook/mms-tts-por` text-to-speech 
 libraries for supported languages. The updated vocabulary table is then exported to a CSV file and a 
