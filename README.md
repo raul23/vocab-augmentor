@@ -157,7 +157,7 @@ saved as environment variables. Follow the steps below to manage your API keys:
   generate accurate translations and text examples efficiently.
 
 By following these steps, you can seamlessly integrate API keys into the 
-Vocab-Augmentor script and leverage its full capabilities for advanced language 
+`vocab` script and leverage its full capabilities for advanced language 
 learning tasks.
 
 ## Performance Recommendations
@@ -269,7 +269,7 @@ The CSV file might have the following structure:
 
 ## Contributing
 
-[Contributions](https://github.com/raul23/Vocab-Augmentor/pulls) are welcome!
+[Contributions](https://github.com/raul23/vocab-augmentor/pulls) are welcome!
 
 ## License
 
