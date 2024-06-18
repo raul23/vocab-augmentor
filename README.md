@@ -1,4 +1,4 @@
-# vocab-augmentor v0.1.0
+# vocab-augmentor v0.1.0-beta
 ## Overview
 
 **vocab-augmentor** is a Python tool designed to help language learners expand their vocabulary 
