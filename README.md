@@ -1,7 +1,7 @@
 # vocab-augmentor
 ## Overview
 
-**vocab-augmentor** is a Python package designed to help language learners expand their vocabulary 
+**vocab-augmentor** is a Python tool designed to help language learners expand their vocabulary 
 effortlessly. By leveraging advanced language models such as `facebook/mbart-large-50-many-to-many-mmt`, 
 `Helsinki-NLP/opus-mt`, `Gemini 1.0 Pro`, and `llama 3-8b`, this tool identifies new words from any 
 given text, translates them, and updates your personal vocabulary table. Additionally, it supports 
