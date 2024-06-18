@@ -24,8 +24,6 @@ feature-rich HTML file for easy access and further study.
   - `Helsinki-NLP/opus-mt`
   - `Gemini 1.0 Pro`
   - `llama 3-8b`
-- **New Vocabulary Detection**: Detects words not present in your existing vocabulary
-  list.
 - **Audio Pronunciation**: Adds pronunciation sounds for new words using `MeloTTS` for
   supported languages, including English, French, Spanish, Chinese, Korean, and Japanese.
 
