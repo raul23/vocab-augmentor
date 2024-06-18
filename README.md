@@ -24,7 +24,6 @@ feature-rich HTML file for easy access and further study.
   - `Helsinki-NLP/opus-mt`
   - `Gemini 1.0 Pro`
   - `llama 3-8b`
-- **Automatic Segmentation**: Segments the provided text to identify individual words.
 - **New Vocabulary Detection**: Detects words not present in your existing vocabulary
   list.
 - **Detailed Word Information**: Saves new words along with their translation, pinyin
