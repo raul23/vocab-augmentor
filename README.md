@@ -12,7 +12,7 @@ feature-rich HTML file for easy access and further study.
 ![Table (HTML) displaying translation data including audio links, POS](./docs/images/table_sol_y_cielo.png)
 
 > HTML table displaying words extracted from source text, including translation data, audio links,
-> and part of speech (POS)
+> and part of speech (POS) tags
 
 ## Features
 
