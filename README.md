@@ -136,6 +136,8 @@ learning tasks.
 
 To display the `vocab` script list of options and their descriptions:
 ```terminal
+$ vocab -h
+
 usage: vocab [OPTIONS] {TEXT} {TGT_LANG}
 
 Expand your vocabulary list by identifying and translating new words from provided text using various language models.
@@ -190,11 +192,11 @@ options:
 
 1. Run the script:
    ```terminal
-   vocab -t 'Sol y cielo' -l en -m gemini --ap --as --aaw
+   vocab -t 'El sol y un cielo' -l en -m gemini --ap --as --aaw
    ```
 
    **NOTES**:
-   - `-t 'Sol y cielo'`: the source text to be translated from Spanish to English (`-l en`)
+   - `-t 'El sol y un cielo'`: the source text to be translated from Spanish to English (`-l en`)
    - `-m gemini`: the `Gemini 1.0 Pro` model is used for translation from Spanish to English
    - `--ap`: Part-of-Speech (POS) tags will be added for each segmented word from the source text
    - `--as`: Two example sentences will be generated for each segmented word from the source text
