@@ -49,6 +49,8 @@ feature-rich HTML file for easy access and further study.
 - **Platform**: tested on Linux
 - **Python**: version 3.10.13+
 - `langcodes`: to get the full name of a language from its short code
+<!-- conda install langcodes -->
+<!-- langcodes-3.3.0 -->
 
 ### Selective Module Installation
 
