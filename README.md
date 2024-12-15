@@ -52,6 +52,12 @@ feature-rich HTML file for easy access and further study.
 <!-- conda install langcodes -->
 <!-- langcodes-3.3.0 -->
 
+<!-- conda install python-dotenv -->
+<!-- python-dotenv 0.21.0 -->
+
+<!-- pip install google-generativeai -->
+<!-- google-generativeai 0.8.3  -->
+
 ### Selective Module Installation
 
 Modules are installed automatically by the `vocab` script only when needed for specific 
