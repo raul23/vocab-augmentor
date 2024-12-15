@@ -58,6 +58,9 @@ feature-rich HTML file for easy access and further study.
 <!-- pip install google-generativeai -->
 <!-- google-generativeai 0.8.3  -->
 
+<!-- conda install huggingface_hub -->
+<!-- huggingface_hub 0.24.6 -->
+
 ### Selective Module Installation
 
 Modules are installed automatically by the `vocab` script only when needed for specific 
